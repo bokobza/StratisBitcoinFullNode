@@ -67,14 +67,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 context.TransactionBuilder.Shuffle();
 
             bool sign = !string.IsNullOrEmpty(context.WalletPassword);
-            Transaction transaction = context.TransactionBuilder.BuildTransaction(sign);
-
-            if (context.TransactionBuilder.Verify(transaction, out TransactionPolicyError[] errors))
-                return transaction;
-
-            string errorsMessage = string.Join(" - ", errors.Select(s => s.ToString()));
-            this.logger.LogError($"Build transaction failed: {errorsMessage}");
-            throw new WalletException($"Could not build the transaction. Details: {errorsMessage}");
+            return context.TransactionBuilder.BuildTransaction(sign);
         }
 
         /// <inheritdoc />
