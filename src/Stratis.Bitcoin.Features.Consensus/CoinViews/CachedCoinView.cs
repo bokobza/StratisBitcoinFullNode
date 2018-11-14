@@ -517,7 +517,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                 {
                     this.logger.LogTrace("Outputs of transaction ID '{0}' was found in cache. 'unspentToRestore' is {1}", unspentToRestore.TransactionId, unspentToRestore);
                     
-                    cacheItem.UnspentOutputs = unspentToRestore;
+                    cacheItem.UnspentOutputs = unspentToRestore.Clone();
                     cacheItem.IsDirty = true;
                 }
                 else
@@ -526,7 +526,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
 
                     cacheItem = new CacheItem
                     {
-                        UnspentOutputs = unspentToRestore,
+                        UnspentOutputs = unspentToRestore.Clone(),
                         IsDirty = true
                     };
 
