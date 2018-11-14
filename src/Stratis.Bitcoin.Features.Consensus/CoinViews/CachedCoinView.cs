@@ -515,12 +515,14 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
 
                 if (this.cachedUtxoItems.TryGetValue(unspentToRestore.TransactionId, out CacheItem cacheItem))
                 {
+                    this.logger.LogTrace("Outputs of transaction ID '{0}' was found in cache. 'unspentToRestore' is {1}", unspentToRestore.TransactionId, unspentToRestore);
+                    
                     cacheItem.UnspentOutputs = unspentToRestore;
                     cacheItem.IsDirty = true;
                 }
                 else
                 {
-                    this.logger.LogTrace("Outputs of transaction ID '{0}' not found in cache, inserting them.", unspentToRestore.TransactionId);
+                    this.logger.LogTrace("Outputs of transaction ID '{0}' not found in cache, inserting them. 'unspentToRestore' is {1}", unspentToRestore.TransactionId, unspentToRestore);
 
                     cacheItem = new CacheItem
                     {
@@ -530,6 +532,8 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
 
                     this.cachedUtxoItems.Add(unspentToRestore.TransactionId, cacheItem);
                 }
+
+                this.logger.LogTrace("CacheItem unspent outputs is {0}.", cacheItem.UnspentOutputs);
             }
         }
 
@@ -539,7 +543,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
             {
                 this.logger.LogTrace("Attempt to remove transaction with ID '{0}'.", transactionToRemove);
                 bool removed = this.cachedUtxoItems.Remove(transactionToRemove);
-                this.logger.LogTrace("Transaction with ID '{0}' was{1} removed successfully.", transactionToRemove, removed ? null : " not");
+                this.logger.LogTrace("Transaction with ID '{0}' was{1} removed successfully.", transactionToRemove, removed ? string.Empty : " not");
             }
         }
 
