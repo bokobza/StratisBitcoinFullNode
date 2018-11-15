@@ -205,6 +205,9 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         {
             Guard.NotNull(txIds, nameof(txIds));
 
+            this.logger.LogTrace("TrxIds list: {0}", string.Join(Environment.NewLine, txIds.ToList()));
+            this.logger.LogTrace("TrxIds length is: {0}", txIds.Length);
+
             FetchCoinsResponse result = null;
             var outputs = new UnspentOutputs[txIds.Length];
             var miss = new List<int>();
@@ -226,6 +229,8 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                         outputs[i] = cache.UnspentOutputs == null ? null :
                                      cache.UnspentOutputs.IsPrunable ? null :
                                      cache.UnspentOutputs.Clone();
+
+                        this.logger.LogTrace("outputs[{0}] is: {1}", i, outputs[i]);
                     }
                 }
 

@@ -146,6 +146,11 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
 
                             this.logger.LogTrace("Outputs for '{0}' were {1}.", input, outputs == null ? "NOT loaded" : "loaded");
 
+                            if (outputs != null)
+                            {
+                                this.logger.LogTrace("Outputs for '{0}' are {1}.", input, outputs);
+                            }
+
                             result[i++] = outputs;
                         }
 
@@ -413,6 +418,10 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                         {
                             blockStake.BlockStake = stakeRow.Value;
                             blockStake.InStore = true;
+                        }
+                        else
+                        {
+                            this.logger.LogTrace("Couldn't find POS block hash '{0}' in the database.", blockStake.BlockId);
                         }
                     }
                 }
