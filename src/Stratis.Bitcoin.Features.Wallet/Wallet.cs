@@ -979,7 +979,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         }
 
         /// <summary>
-        /// checks if a UTXO that has a output with unspent coins.
+        /// Checks if the UTXO has an output with unspent coins.
         /// If a spending output exists (even if it is not confirmed) this will return as zero balance.
         /// </summary>
         /// <param name="confirmedOnly">A value indicating whether we only want confirmed amount.</param>
@@ -987,7 +987,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         [NoTrace]
         public Money SpendableAmount(bool confirmedOnly)
         {
-            // Check if if it is spent and whether it is confirmed.
+            // Check if it is spent and whether it is confirmed.
             if (this.IsSpent() || (confirmedOnly && !this.IsConfirmed()))
             {
                 return Money.Zero;
