@@ -345,6 +345,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                         foreach (UnspentOutputs coin in firstRow.Value.OutputsToRestore)
                         {
                             this.logger.LogTrace("Outputs of transaction ID '{0}' will be restored.", coin.TransactionId);
+                            this.logger.LogTrace("Restored outputs of transaction ID '{0}' are {1} .", coin.TransactionId, coin);
                             transaction.Insert("Coins", coin.TransactionId.ToBytes(false), coin.ToCoins());
                         }
 
