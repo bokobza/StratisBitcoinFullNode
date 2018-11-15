@@ -484,6 +484,8 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                     this.blockHash = lastRewindData.PreviousBlockHash;
                     this.blockHeight = lastRewindDataItem.Key - 1;
 
+                    this.logger.LogTrace("In rewind, removing key: '{0}'", lastRewindDataItem.Key);
+
                     this.cachedRewindDataIndex.Remove(lastRewindDataItem.Key);
                     this.logger.LogTrace("(-)[REMOVED_FROM_BATCH]:'{0}'", this.blockHash);
                     return this.blockHash;
@@ -492,6 +494,20 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                 // Rewind data was not found in cache, try underlying storage.
                 uint256 hash = await this.inner.RewindAsync().ConfigureAwait(false);
 
+                this.logger.LogTrace("Rewind from inner returned: '{0}'", hash);
+                this.logger.LogTrace("Before clearing, cachedUtxoItems is: ");
+                foreach (var item in this.cachedUtxoItems)
+                {
+                    if (item.Value == null)
+                    {
+                        this.logger.LogTrace("Item with key {0} is null.", item.Key);
+                    }
+                    else
+                    {
+                        this.logger.LogTrace("{0}- isDirty {1}, exists in inner {2}, {3}", item.Key, item.Value.IsDirty, item.Value.ExistInInner, item.Value.UnspentOutputs);
+                    }
+                }
+                
                 // All the cached utxos are now on disk so we can clear the cached entry list.
                 this.cachedUtxoItems.Clear();
 
