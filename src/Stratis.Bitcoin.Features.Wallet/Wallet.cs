@@ -622,7 +622,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         public IEnumerable<TransactionData> GetSpendableTransactions()
         {
             IEnumerable<HdAddress> addresses = this.GetCombinedAddresses();
-            return addresses.Where(r => r.Transactions != null).SelectMany(a => a.Transactions.Where(t => t.IsSpendable()));
+            return addresses.Where(r => r.Transactions != null).SelectMany(a => a.Transactions.Where(t => !t.IsSpent()));
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 return new List<TransactionData>();
             }
 
-            return this.Transactions.Where(t => t.IsSpendable());
+            return this.Transactions.Where(t => !t.IsSpent());
         }
 
         /// <summary>
@@ -969,12 +969,13 @@ namespace Stratis.Bitcoin.Features.Wallet
         }
 
         /// <summary>
-        /// Indicates an output is spendable.
+        /// Indicates whether an output has been spent.
         /// </summary>
+        /// <returns>A value indicating whether an output has been spent.</returns>
         [NoTrace]
-        public bool IsSpendable()
+        public bool IsSpent()
         {
-            return this.SpendingDetails == null;
+            return this.SpendingDetails != null;
         }
 
         [NoTrace]
@@ -982,7 +983,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         {
             // This method only returns a UTXO that has no spending output.
             // If a spending output exists (even if its not confirmed) this will return as zero balance.
-            if (this.IsSpendable())
+            if (!this.IsSpent())
             {
                 // If the 'confirmedOnly' flag is set check that the UTXO is confirmed.
                 if (confirmedOnly && !this.IsConfirmed())
