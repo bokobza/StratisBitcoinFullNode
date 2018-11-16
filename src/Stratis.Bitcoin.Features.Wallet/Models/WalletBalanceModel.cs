@@ -31,5 +31,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Models
 
         [JsonProperty(PropertyName = "amountUnconfirmed")]
         public Money AmountUnconfirmed { get; set; }
+
+        public Money SpendableAmount { get; set; }
     }
 }

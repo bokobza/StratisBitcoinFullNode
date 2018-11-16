@@ -547,7 +547,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                         Name = account.Name,
                         HdPath = account.HdPath,
                         AmountConfirmed = balance.AmountConfirmed,
-                        AmountUnconfirmed = balance.AmountUnconfirmed
+                        AmountUnconfirmed = balance.AmountUnconfirmed,
+                        SpendableAmount = balance.SpendableAmount
                     });
                 }
 

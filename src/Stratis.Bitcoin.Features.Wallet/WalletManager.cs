@@ -595,11 +595,19 @@ namespace Stratis.Bitcoin.Features.Wallet
                 {
                     (Money amountConfirmed, Money amountUnconfirmed) result = account.GetSpendableAmount();
 
+                    var spendableBalance = account.GetSpendableTransactions(this.chain.Tip.Height, this.network.Consensus.CoinbaseMaturity).ToArray();
+                    Money spendableAmount = Money.Zero;
+                    foreach (var bal in spendableBalance)
+                    {
+                        spendableAmount += bal.Transaction.Amount;
+                    }
+
                     balances.Add(new AccountBalance
                     {
                         Account = account,
                         AmountConfirmed = result.amountConfirmed,
-                        AmountUnconfirmed = result.amountUnconfirmed
+                        AmountUnconfirmed = result.amountUnconfirmed,
+                        SpendableAmount = spendableAmount
                     });
                 }
             }
@@ -627,10 +635,10 @@ namespace Stratis.Bitcoin.Features.Wallet
                     hdAddress = wallet.GetAllAddressesByCoinType(this.coinType).FirstOrDefault(a => a.Address == address);
                     if (hdAddress == null) continue;
 
-                    (Money amountConfirmed, Money amountUnconfirmed) result = hdAddress.GetSpendableAmount();
+                    (Money amountConfirmed, Money amountUnconfirmed) result = hdAddress.GetBalances();
 
-                    balance.AmountConfirmed = result.amountConfirmed;
-                    balance.AmountUnconfirmed = result.amountUnconfirmed;
+                    balance.AmountConfirmed = result.totalConfirmedAmount;
+                    balance.AmountUnconfirmed = result.totalUnconfirmedAmount;
 
                     break;
                 }

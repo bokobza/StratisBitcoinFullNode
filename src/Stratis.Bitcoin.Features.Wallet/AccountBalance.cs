@@ -21,5 +21,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// The balance of unconfirmed transactions.
         /// </summary>
         public Money AmountUnconfirmed { get; set; }
+
+        public Money SpendableAmount { get; set; }
     }
 }
