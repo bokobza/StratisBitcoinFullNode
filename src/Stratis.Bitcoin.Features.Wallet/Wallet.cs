@@ -143,16 +143,11 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>
         /// Update the last block synced height and hash in the wallet.
         /// </summary>
-        /// <param name="coinType">The type of the coin this account is for.</param>
         /// <param name="block">The block whose details are used to update the wallet.</param>
-        public void SetLastBlockDetailsByCoinType(CoinType coinType, ChainedHeader block)
+        public void SetLastBlockDetails(ChainedHeader block)
         {
-            AccountRoot accountRoot = this.AccountsRoot.SingleOrDefault(a => a.CoinType == coinType);
-
-            if (accountRoot == null) return;
-
-            accountRoot.LastBlockSyncedHeight = block.Height;
-            accountRoot.LastBlockSyncedHash = block.HashBlock;
+            this.LastBlockSyncedHeight = block.Height;
+            this.LastBlockSyncedHash = block.HashBlock;
         }
 
         /// <summary>
@@ -349,19 +344,6 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// </summary>
         [JsonProperty(PropertyName = "coinType")]
         public CoinType CoinType { get; set; }
-
-        /// <summary>
-        /// The height of the last block that was synced.
-        /// </summary>
-        [JsonProperty(PropertyName = "lastBlockSyncedHeight", NullValueHandling = NullValueHandling.Ignore)]
-        public int? LastBlockSyncedHeight { get; set; }
-
-        /// <summary>
-        /// The hash of the last block that was synced.
-        /// </summary>
-        [JsonProperty(PropertyName = "lastBlockSyncedHash", NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(UInt256JsonConverter))]
-        public uint256 LastBlockSyncedHash { get; set; }
 
         /// <summary>
         /// The accounts used in the wallet.

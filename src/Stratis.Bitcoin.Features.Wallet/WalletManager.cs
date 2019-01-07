@@ -684,7 +684,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             int res;
             lock (this.lockObject)
             {
-                res = this.Wallets.Min(w => w.AccountsRoot.SingleOrDefault(a => a.CoinType == this.coinType)?.LastBlockSyncedHeight) ?? 0;
+                res = this.Wallets.Min(w => w.LastBlockSyncedHeight) ?? 0;
             }
 
             return res;
@@ -710,9 +710,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             lock (this.lockObject)
             {
                 lastBlockSyncedHash = this.Wallets
-                    .Select(w => w.AccountsRoot.SingleOrDefault(a => a.CoinType == this.coinType))
-                    .Where(w => w != null)
-                    .OrderBy(o => o.LastBlockSyncedHeight)
+                    .OrderBy(w => w.LastBlockSyncedHeight)
                     .FirstOrDefault()?.LastBlockSyncedHash;
 
                 // If details about the last block synced are not present in the wallet,
@@ -1180,7 +1178,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
             lock (this.lockObject)
             {
-                wallet.SetLastBlockDetailsByCoinType(this.coinType, chainedHeader);
+                wallet.SetLastBlockDetails(chainedHeader);
             }
         }
 
@@ -1369,7 +1367,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <inheritdoc />
         public int? GetEarliestWalletHeight()
         {
-            return this.Wallets.Min(w => w.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight);
+            return this.Wallets.Min(w => w.LastBlockSyncedHeight);
         }
 
         /// <inheritdoc />

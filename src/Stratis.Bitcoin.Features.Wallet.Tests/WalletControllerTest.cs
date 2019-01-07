@@ -717,11 +717,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 Name = "myWallet",
                 Network = NetworkHelpers.GetNetwork("mainnet"),
                 CreationTime = new DateTime(2017, 6, 19, 1, 1, 1),
+                LastBlockSyncedHeight = 15,
                 AccountsRoot = new List<AccountRoot> {
                     new AccountRoot()
                     {
-                        CoinType = (CoinType)this.Network.Consensus.CoinType,
-                        LastBlockSyncedHeight = 15
+                        CoinType = (CoinType)this.Network.Consensus.CoinType
                     }
                 }
             };

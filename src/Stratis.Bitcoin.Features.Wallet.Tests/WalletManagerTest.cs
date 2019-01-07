@@ -75,12 +75,12 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             for (int i = 0; i < expectedWallet.AccountsRoot.Count; i++)
             {
                 Assert.Equal(CoinType.Stratis, expectedWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(1, expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
-                Assert.Equal(block.GetHash(), expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
+                Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
+                Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
 
                 Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, actualWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash, actualWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight, actualWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
+                Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
+                Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
 
                 AccountRoot accountRoot = actualWallet.AccountsRoot.ElementAt(i);
                 Assert.Equal(1, accountRoot.Accounts.Count);
@@ -187,12 +187,12 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             for (int i = 0; i < expectedWallet.AccountsRoot.Count; i++)
             {
                 Assert.Equal(CoinType.Stratis, expectedWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(1, expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
-                Assert.Equal(block.GetHash(), expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
+                Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
+                Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
 
                 Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, actualWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash, actualWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight, actualWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
+                Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
+                Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
 
                 AccountRoot accountRoot = actualWallet.AccountsRoot.ElementAt(i);
                 Assert.Equal(1, accountRoot.Accounts.Count);
@@ -396,8 +396,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             for (int i = 0; i < recoveredWallet.AccountsRoot.Count; i++)
             {
                 Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, recoveredWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight, recoveredWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash, recoveredWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
+                Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
+                Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
 
                 AccountRoot recoveredAccountRoot = recoveredWallet.AccountsRoot.ElementAt(i);
                 AccountRoot expectedAccountRoot = expectedWallet.AccountsRoot.ElementAt(i);
@@ -487,8 +487,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             for (int i = 0; i < recoveredWallet.AccountsRoot.Count; i++)
             {
                 Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, recoveredWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight, recoveredWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHeight);
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash, recoveredWallet.AccountsRoot.ElementAt(i).LastBlockSyncedHash);
+                Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
+                Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
 
                 AccountRoot recoveredAccountRoot = recoveredWallet.AccountsRoot.ElementAt(i);
                 AccountRoot expectedAccountRoot = expectedWallet.AccountsRoot.ElementAt(i);
@@ -1095,58 +1095,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         }
 
         [Fact]
-        public void LastBlockHeightWithWalletsReturnsLowestLastBlockSyncedHeightForAccountRootsOfManagerCoinType()
-        {
-            var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
-                CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
-            Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 15;
-            Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 20;
-            Wallet wallet3 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet3.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 56;
-            walletManager.Wallets.Add(wallet);
-            walletManager.Wallets.Add(wallet2);
-            walletManager.Wallets.Add(wallet3);
-
-            int result = walletManager.LastBlockHeight();
-
-            Assert.Equal(20, result);
-        }
-
-        [Fact]
-        public void LastBlockHeightWithWalletsReturnsLowestLastBlockSyncedHeightForAccountRootsOfManagerCoinType2()
-        {
-            var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
-                CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
-            Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 15;
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                CoinType = CoinType.Bitcoin,
-                LastBlockSyncedHeight = 12
-            });
-
-            Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 20;
-            Wallet wallet3 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet3.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 56;
-            walletManager.Wallets.Add(wallet);
-            walletManager.Wallets.Add(wallet2);
-            walletManager.Wallets.Add(wallet3);
-
-            int result = walletManager.LastBlockHeight();
-
-            Assert.Equal(12, result);
-        }
-
-        [Fact]
         public void LastBlockHeightWithoutWalletsOfCoinTypeReturnsZero()
         {
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
@@ -1186,59 +1134,21 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 15;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(15);
+            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
+            wallet.LastBlockSyncedHeight = 20;
+            wallet.LastBlockSyncedHash = new uint256(20);
             Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
             wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 20;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(20);
-            Wallet wallet3 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet3.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 56;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(56);
+            wallet2.LastBlockSyncedHeight = 56;
+            wallet2.LastBlockSyncedHash = new uint256(56);
             walletManager.Wallets.Add(wallet);
             walletManager.Wallets.Add(wallet2);
-            walletManager.Wallets.Add(wallet3);
 
             uint256 result = walletManager.LastReceivedBlockHash();
 
             Assert.Equal(new uint256(20), result);
         }
-
-        [Fact]
-        public void LastReceivedBlockHashWithWalletsReturnsLowestLastReceivedBlockHashForAccountRootsOfManagerCoinType2()
-        {
-            var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
-                CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
-            Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 15;
-            wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(15);
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                CoinType = CoinType.Bitcoin,
-                LastBlockSyncedHeight = 12,
-                LastBlockSyncedHash = new uint256(12)
-            });
-
-            Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 20;
-            wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(20);
-            Wallet wallet3 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet3.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHeight = 56;
-            wallet3.AccountsRoot.ElementAt(0).LastBlockSyncedHash = new uint256(56);
-            walletManager.Wallets.Add(wallet);
-            walletManager.Wallets.Add(wallet2);
-            walletManager.Wallets.Add(wallet3);
-
-            uint256 result = walletManager.LastReceivedBlockHash();
-
-            Assert.Equal(new uint256(12), result);
-        }
-
+        
         [Fact]
         public void NoLastReceivedBlockHashInWalletReturnsChainTip()
         {
@@ -2418,8 +2328,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.RemoveBlocks(chainedHeader);
 
             Assert.Equal(chainedHeader.GetLocator().Blocks, wallet.BlockLocator);
-            Assert.Equal(chainedHeader.Height, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-            Assert.Equal(chainedHeader.HashBlock, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+            Assert.Equal(chainedHeader.Height, wallet.LastBlockSyncedHeight);
+            Assert.Equal(chainedHeader.HashBlock, wallet.LastBlockSyncedHash);
             Assert.Equal(chainedHeader.HashBlock, walletManager.WalletTipHash);
 
             HdAccount account = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0);
@@ -2538,8 +2448,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
 
             Assert.Equal(chainedBlock.GetLocator().Blocks, wallet.BlockLocator);
-            Assert.Equal(chainedBlock.Height, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-            Assert.Equal(chainedBlock.HashBlock, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+            Assert.Equal(chainedBlock.Height, wallet.LastBlockSyncedHeight);
+            Assert.Equal(chainedBlock.HashBlock, wallet.LastBlockSyncedHash);
             Assert.Equal(chainedBlock.HashBlock, walletManager.WalletTipHash);
         }
 
@@ -3006,8 +2916,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             foreach (Wallet w in walletManager.Wallets)
             {
                 Assert.Equal(chainedBlock.GetLocator().Blocks, w.BlockLocator);
-                Assert.Equal(chainedBlock.Height, w.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-                Assert.Equal(chainedBlock.HashBlock, w.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+                Assert.Equal(chainedBlock.Height, w.LastBlockSyncedHeight);
+                Assert.Equal(chainedBlock.HashBlock, w.LastBlockSyncedHash);
             }
         }
 
@@ -3029,13 +2939,13 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.UpdateLastBlockSyncedHeight(wallet, chainedBlock);
 
             Assert.Equal(chainedBlock.GetLocator().Blocks, wallet.BlockLocator);
-            Assert.Equal(chainedBlock.Height, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-            Assert.Equal(chainedBlock.HashBlock, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+            Assert.Equal(chainedBlock.Height, wallet.LastBlockSyncedHeight);
+            Assert.Equal(chainedBlock.HashBlock, wallet.LastBlockSyncedHash);
             Assert.NotEqual(chainedBlock.HashBlock, walletManager.WalletTipHash);
 
             Assert.NotEqual(chainedBlock.GetLocator().Blocks, wallet2.BlockLocator);
-            Assert.NotEqual(chainedBlock.Height, wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-            Assert.NotEqual(chainedBlock.HashBlock, wallet2.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+            Assert.NotEqual(chainedBlock.Height, wallet2.LastBlockSyncedHeight);
+            Assert.NotEqual(chainedBlock.HashBlock, wallet2.LastBlockSyncedHash);
         }
 
         [Fact]
@@ -3055,8 +2965,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.UpdateLastBlockSyncedHeight(wallet, chainedBlock);
 
             Assert.Equal(chainedBlock.GetLocator().Blocks, wallet.BlockLocator);
-            Assert.NotEqual(chainedBlock.Height, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHeight);
-            Assert.NotEqual(chainedBlock.HashBlock, wallet.AccountsRoot.ElementAt(0).LastBlockSyncedHash);
+            Assert.NotEqual(chainedBlock.Height, wallet.LastBlockSyncedHeight);
+            Assert.NotEqual(chainedBlock.HashBlock, wallet.LastBlockSyncedHash);
             Assert.NotEqual(chainedBlock.HashBlock, walletManager.WalletTipHash);
         }
 

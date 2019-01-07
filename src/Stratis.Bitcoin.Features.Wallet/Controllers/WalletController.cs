@@ -325,7 +325,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                 {
                     Network = wallet.Network,
                     CreationTime = wallet.CreationTime,
-                    LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
+                    LastBlockSyncedHeight = wallet.LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
                     ChainTip = this.chain.Tip.Height,
                     IsChainSynced = this.chain.IsDownloaded(),
@@ -1079,7 +1079,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
 
                     // Update the wallet and save it to the file system.
                     Wallet wallet = this.walletManager.GetWallet(request.WalletName);
-                    wallet.SetLastBlockDetailsByCoinType(this.coinType, chainedHeader);
+                    wallet.SetLastBlockDetails(chainedHeader);
                     this.walletManager.SaveWallet(wallet);
 
                     // Start the syncing process from the block before the earliest transaction was seen.
