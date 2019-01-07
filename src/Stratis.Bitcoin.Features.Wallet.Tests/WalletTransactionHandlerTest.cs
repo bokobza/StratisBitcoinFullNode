@@ -52,7 +52,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Throws<WalletException>(() =>
             {
                 Wallet wallet = WalletTestsHelpers.GenerateBlankWallet("myWallet1", "password");
-                wallet.AccountsRoot.ElementAt(0).Accounts.Add(
+                wallet.Accounts.Add(
                     new HdAccount
                     {
                         Name = "account1",
@@ -107,7 +107,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var chain = new ConcurrentChain(wallet.Network);
             WalletTestsHelpers.AddBlocksWithCoinbaseToChain(wallet.Network, chain, address);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -288,7 +288,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var chain = new ConcurrentChain(wallet.Network);
             WalletTestsHelpers.AddBlocksWithCoinbaseToChain(wallet.Network, chain, address, 4);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -378,10 +378,8 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletTransactionHandler = new WalletTransactionHandler(this.LoggerFactory.Object, walletManager, It.IsAny<WalletFeePolicy>(), this.Network, this.standardTransactionPolicy);
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("wallet1");
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { WalletTestsHelpers.CreateAccount("account 1") }
-            });
+            wallet.Accounts = new List<HdAccount> { WalletTestsHelpers.CreateAccount("account 1") };
+
             walletManager.Wallets.Add(wallet);
 
             Exception ex = Assert.Throws<WalletException>(() => walletTransactionHandler.GetMaximumSpendableAmount(new WalletAccountReference("wallet1", "noaccount"), FeeType.Low, true));
@@ -415,10 +413,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             account.InternalAddresses.Add(accountAddress2);
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("wallet1");
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             walletManager.Wallets.Add(wallet);
 
@@ -451,10 +446,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             account.InternalAddresses.Add(accountAddress2);
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("wallet1");
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> {account};
 
             walletManager.Wallets.Add(wallet);
 
@@ -490,10 +482,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             account.InternalAddresses.Add(accountAddress2);
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("wallet1");
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             walletManager.Wallets.Add(wallet);
 
@@ -517,10 +506,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             account.InternalAddresses.Add(accountAddress2);
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("wallet1");
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             walletManager.Wallets.Add(wallet);
 
@@ -649,7 +635,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             WalletTestsHelpers.AddBlocksWithCoinbaseToChain(wallet.Network, chain, address);
             TransactionData addressTransaction = address.Transactions.First();
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",

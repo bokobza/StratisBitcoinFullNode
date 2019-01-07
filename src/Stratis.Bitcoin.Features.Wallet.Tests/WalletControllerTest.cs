@@ -717,13 +717,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 Name = "myWallet",
                 Network = NetworkHelpers.GetNetwork("mainnet"),
                 CreationTime = new DateTime(2017, 6, 19, 1, 1, 1),
-                LastBlockSyncedHeight = 15,
-                AccountsRoot = new List<AccountRoot> {
-                    new AccountRoot()
-                    {
-                        CoinType = (CoinType)this.Network.Consensus.CoinType
-                    }
-                }
+                LastBlockSyncedHeight = 15
             };
 
             var concurrentChain = new ConcurrentChain(this.Network);
@@ -857,10 +851,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var addresses = new List<HdAddress> { address };
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> {account};
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
 
@@ -913,10 +904,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var addresses = new List<HdAddress> { address, changeAddress };
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
             var accountsHistory = new List<AccountHistory> { new AccountHistory { History = flat, Account = account } };
@@ -988,10 +976,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
             var accountsHistory = new List<AccountHistory> { new AccountHistory { History = flat, Account = account } };
@@ -1084,10 +1069,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
             var accountsHistory = new List<AccountHistory> { new AccountHistory { History = flat, Account = account } };
@@ -1183,10 +1165,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var addresses = new List<HdAddress> { address, changeAddress, changeAddress2 };
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
 
@@ -1824,23 +1803,20 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             string walletName = "wallet 1";
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
 
-            wallet.AccountsRoot.Add(new AccountRoot()
+            wallet.Accounts = new List<HdAccount>()
             {
-                Accounts = new List<HdAccount>()
+                new HdAccount
                 {
-                    new HdAccount
-                    {
-                        Name = "account 0"
-                    },
-                    new HdAccount
-                    {
-                        Name = "account 1"
-                    }
+                    Name = "account 0"
+                },
+                new HdAccount
+                {
+                    Name = "account 1"
                 }
-            });
+            };
 
             var mockWalletManager = new Mock<IWalletManager>();
-            mockWalletManager.Setup(m => m.GetAccounts(walletName)).Returns(wallet.AccountsRoot.SelectMany(x => x.Accounts));
+            mockWalletManager.Setup(m => m.GetAccounts(walletName)).Returns(wallet.Accounts);
 
             var controller = new WalletController(this.LoggerFactory.Object, mockWalletManager.Object, new Mock<IWalletTransactionHandler>().Object, new Mock<IWalletSyncManager>().Object, It.IsAny<ConnectionManager>(), this.Network, this.chain, new Mock<IBroadcasterManager>().Object, DateTimeProvider.Default);
             IActionResult result = controller.ListAccounts(new ListAccountsModel
@@ -1992,15 +1968,15 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var receiveAddresses = new List<HdAddress> { usedReceiveAddress, unusedReceiveAddress };
             var changeAddresses = new List<HdAddress> { usedChangeAddress, unusedChangeAddress };
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
-            wallet.AccountsRoot.Add(new AccountRoot()
+            wallet.Accounts = new List<HdAccount>
             {
-                Accounts = new List<HdAccount> { new HdAccount
+                new HdAccount
                 {
                     ExternalAddresses = receiveAddresses,
                     InternalAddresses = changeAddresses,
                     Name = "Account 0"
-                } }
-            });
+                }
+            };
 
             var mockWalletManager = new Mock<IWalletManager>();
             mockWalletManager.Setup(m => m.GetWallet(walletName)).Returns(wallet);
@@ -2135,7 +2111,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             // Arrange.
             string walletName = "wallet1";
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
-            wallet.AccountsRoot.Add(new AccountRoot());
             uint256 trxId1 = uint256.Parse("d6043add63ec364fcb591cf209285d8e60f1cc06186d4dcbce496cdbb4303400");
             uint256 trxId2 = uint256.Parse("a3dd63ec364fcb59043a1cf209285d8e60f1cc06186d4dcbce496cdbb4303401");
             var resultModel = new HashSet<(uint256 trxId, DateTimeOffset creationTime)>();
@@ -2217,7 +2192,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             // Arrange.
             string walletName = "wallet1";
             Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
-            wallet.AccountsRoot.Add(new AccountRoot());
             uint256 trxId1 = uint256.Parse("d6043add63ec364fcb591cf209285d8e60f1cc06186d4dcbce496cdbb4303400");
             var resultModel = new HashSet<(uint256 trxId, DateTimeOffset creationTime)>();
             resultModel.Add((trxId1, DateTimeOffset.Now));

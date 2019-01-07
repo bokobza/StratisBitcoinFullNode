@@ -7,33 +7,19 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 {
     public class WalletTestBase
     {
-        public static AccountRoot CreateAccountRoot(CoinType coinType)
+        public static HdAccount CreateHdAccountWithAddresses(string accountName)
         {
-            return new AccountRoot()
+            return new HdAccount
             {
-                Accounts = new List<HdAccount>(),
-                CoinType = coinType
-            };
-        }
-
-        public static AccountRoot CreateAccountRootWithHdAccountHavingAddresses(string accountName, CoinType coinType)
-        {
-            return new AccountRoot()
-            {
-                Accounts = new List<HdAccount> {
-                    new HdAccount {
-                        Name = accountName,
-                        InternalAddresses = new List<HdAddress>
-                        {
-                            CreateAddress(false),
-                        },
-                        ExternalAddresses = new List<HdAddress>
-                        {
-                            CreateAddress(false),
-                        }
-                    }
+                Name = accountName,
+                InternalAddresses = new List<HdAddress>
+                {
+                    CreateAddress(false),
                 },
-                CoinType = coinType
+                ExternalAddresses = new List<HdAddress>
+                {
+                    CreateAddress(false),
+                }
             };
         }
 

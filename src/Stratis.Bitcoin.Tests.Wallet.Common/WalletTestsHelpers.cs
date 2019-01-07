@@ -131,7 +131,6 @@ namespace Stratis.Bitcoin.Tests.Wallet.Common
             return new Features.Wallet.Wallet
             {
                 Name = name,
-                AccountsRoot = new List<AccountRoot>(),
                 BlockLocator = null
             };
         }
@@ -153,7 +152,8 @@ namespace Stratis.Bitcoin.Tests.Wallet.Common
                 ChainCode = extendedKey.ChainCode,
                 CreationTime = DateTimeOffset.Now,
                 Network = KnownNetworks.Main,
-                AccountsRoot = new List<AccountRoot> { new AccountRoot() { Accounts = new List<HdAccount>(), CoinType = (CoinType)KnownNetworks.Main.Consensus.CoinType } },
+                Accounts = new List<HdAccount>(),
+                CoinType = (CoinType)KnownNetworks.Main.Consensus.CoinType
             };
 
             return (walletFile, extendedKey);
@@ -207,22 +207,19 @@ namespace Stratis.Bitcoin.Tests.Wallet.Common
         {
             foreach (Features.Wallet.Wallet wallet in walletManager.Wallets)
             {
-                wallet.AccountsRoot.Add(new AccountRoot()
+                wallet.Accounts = new List<HdAccount>
                 {
-                    CoinType = CoinType.Bitcoin,
-                    Accounts = new List<HdAccount>
+                    new HdAccount
                     {
-                        new HdAccount
-                        {
-                            ExternalAddresses = GenerateAddresses(count),
-                            InternalAddresses = GenerateAddresses(count)
-                        },
-                        new HdAccount
-                        {
-                            ExternalAddresses = GenerateAddresses(count),
-                            InternalAddresses = GenerateAddresses(count)
-                        } }
-                });
+                        ExternalAddresses = GenerateAddresses(count),
+                        InternalAddresses = GenerateAddresses(count)
+                    },
+                    new HdAccount
+                    {
+                        ExternalAddresses = GenerateAddresses(count),
+                        InternalAddresses = GenerateAddresses(count)
+                    } 
+                };
             }
         }
 

@@ -79,10 +79,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Controllers
             var addresses = new List<HdAddress> { address };
             Features.Wallet.Wallet wallet = WalletTestsHelpers.CreateWallet(walletName);
             var account = new HdAccount { ExternalAddresses = addresses };
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                Accounts = new List<HdAccount> { account }
-            });
+            wallet.Accounts = new List<HdAccount> { account };
 
             List<FlatHistory> flat = addresses.SelectMany(s => s.Transactions.Select(t => new FlatHistory { Address = s, Transaction = t })).ToList();
 

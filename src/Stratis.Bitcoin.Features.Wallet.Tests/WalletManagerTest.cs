@@ -68,63 +68,52 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(expectedWallet.Network, actualWallet.Network);
             Assert.Equal(expectedWallet.EncryptedSeed, actualWallet.EncryptedSeed);
             Assert.Equal(expectedWallet.ChainCode, actualWallet.ChainCode);
+            Assert.Equal(expectedWallet.CoinType, actualWallet.CoinType);
 
-            Assert.Equal(1, expectedWallet.AccountsRoot.Count);
-            Assert.Equal(1, actualWallet.AccountsRoot.Count);
+            Assert.Equal(CoinType.Stratis, expectedWallet.CoinType);
+            Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
+            Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
 
-            for (int i = 0; i < expectedWallet.AccountsRoot.Count; i++)
+            Assert.Equal(expectedWallet.CoinType, actualWallet.CoinType);
+            Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
+            Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
+
+            HdAccount actualAccount = actualWallet.Accounts.ElementAt(0);
+            Assert.Equal($"account {0}", actualAccount.Name);
+            Assert.Equal(0, actualAccount.Index);
+            Assert.Equal($"m/44'/105'/{0}'", actualAccount.HdPath);
+
+            var extKey = new ExtKey(Key.Parse(expectedWallet.EncryptedSeed, "test", expectedWallet.Network), expectedWallet.ChainCode);
+            string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/105'/{0}'")).Neuter().ToString(expectedWallet.Network);
+            Assert.Equal(expectedExtendedPubKey, actualAccount.ExtendedPubKey);
+
+            Assert.Equal(20, actualAccount.InternalAddresses.Count);
+
+            for (int k = 0; k < actualAccount.InternalAddresses.Count; k++)
             {
-                Assert.Equal(CoinType.Stratis, expectedWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
-                Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
+                HdAddress actualAddress = actualAccount.InternalAddresses.ElementAt(k);
+                PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"1/{k}")).PubKey;
+                BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
+                Assert.Equal(k, actualAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
+                Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
+                Assert.Equal($"m/44'/105'/{0}'/1/{k}", actualAddress.HdPath);
+                Assert.Equal(0, actualAddress.Transactions.Count);
+            }
 
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, actualWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
-                Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
-
-                AccountRoot accountRoot = actualWallet.AccountsRoot.ElementAt(i);
-                Assert.Equal(1, accountRoot.Accounts.Count);
-
-                for (int j = 0; j < accountRoot.Accounts.Count; j++)
-                {
-                    HdAccount actualAccount = accountRoot.Accounts.ElementAt(j);
-                    Assert.Equal($"account {j}", actualAccount.Name);
-                    Assert.Equal(j, actualAccount.Index);
-                    Assert.Equal($"m/44'/105'/{j}'", actualAccount.HdPath);
-
-                    var extKey = new ExtKey(Key.Parse(expectedWallet.EncryptedSeed, "test", expectedWallet.Network), expectedWallet.ChainCode);
-                    string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/105'/{j}'")).Neuter().ToString(expectedWallet.Network);
-                    Assert.Equal(expectedExtendedPubKey, actualAccount.ExtendedPubKey);
-
-                    Assert.Equal(20, actualAccount.InternalAddresses.Count);
-
-                    for (int k = 0; k < actualAccount.InternalAddresses.Count; k++)
-                    {
-                        HdAddress actualAddress = actualAccount.InternalAddresses.ElementAt(k);
-                        PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"1/{k}")).PubKey;
-                        BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
-                        Assert.Equal(k, actualAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
-                        Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
-                        Assert.Equal($"m/44'/105'/{j}'/1/{k}", actualAddress.HdPath);
-                        Assert.Equal(0, actualAddress.Transactions.Count);
-                    }
-
-                    Assert.Equal(20, actualAccount.ExternalAddresses.Count);
-                    for (int l = 0; l < actualAccount.ExternalAddresses.Count; l++)
-                    {
-                        HdAddress actualAddress = actualAccount.ExternalAddresses.ElementAt(l);
-                        PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"0/{l}")).PubKey;
-                        BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
-                        Assert.Equal(l, actualAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
-                        Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
-                        Assert.Equal($"m/44'/105'/{j}'/0/{l}", actualAddress.HdPath);
-                        Assert.Equal(0, actualAddress.Transactions.Count);
-                    }
-                }
+            Assert.Equal(20, actualAccount.ExternalAddresses.Count);
+            for (int l = 0; l < actualAccount.ExternalAddresses.Count; l++)
+            {
+                HdAddress actualAddress = actualAccount.ExternalAddresses.ElementAt(l);
+                PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"0/{l}")).PubKey;
+                BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
+                Assert.Equal(l, actualAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
+                Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
+                Assert.Equal($"m/44'/105'/{0}'/0/{l}", actualAddress.HdPath);
+                Assert.Equal(0, actualAddress.Transactions.Count);
             }
 
             Assert.Equal(2, expectedWallet.BlockLocator.Count);
@@ -152,7 +141,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             var chain = new ConcurrentChain(KnownNetworks.StratisMain);
             uint nonce = RandomUtils.GetUInt32();
-            var block = this.Network.CreateBlock();
+            Block block = this.Network.CreateBlock();
             block.AddTransaction(new Transaction());
             block.UpdateMerkleRoot();
             block.Header.HashPrevBlock = chain.Genesis.HashBlock;
@@ -170,7 +159,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Mnemonic mnemonic = walletManager.CreateWallet(password, "mywallet", passphrase);
 
             // assert it has saved it to disk and has been created correctly.
-            var expectedWallet = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(dataFolder.WalletPath + "/mywallet.wallet.json"));
+            Wallet expectedWallet = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(dataFolder.WalletPath + "/mywallet.wallet.json"));
             Wallet actualWallet = walletManager.Wallets.ElementAt(0);
 
             Assert.Equal("mywallet", expectedWallet.Name);
@@ -180,63 +169,54 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(expectedWallet.Network, actualWallet.Network);
             Assert.Equal(expectedWallet.EncryptedSeed, actualWallet.EncryptedSeed);
             Assert.Equal(expectedWallet.ChainCode, actualWallet.ChainCode);
+            Assert.Equal(expectedWallet.CoinType, actualWallet.CoinType);
 
-            Assert.Equal(1, expectedWallet.AccountsRoot.Count);
-            Assert.Equal(1, actualWallet.AccountsRoot.Count);
+            Assert.Equal(1, expectedWallet.Accounts.Count);
+            Assert.Equal(1, actualWallet.Accounts.Count);
 
-            for (int i = 0; i < expectedWallet.AccountsRoot.Count; i++)
+            Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
+            Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
+
+            Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
+            Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
+
+            HdAccount actualAccount = actualWallet.Accounts.ElementAt(0);
+            
+            Assert.Equal($"account {0}", actualAccount.Name);
+            Assert.Equal(0, actualAccount.Index);
+            Assert.Equal($"m/44'/105'/{0}'", actualAccount.HdPath);
+
+            var extKey = new ExtKey(Key.Parse(expectedWallet.EncryptedSeed, "test", expectedWallet.Network), expectedWallet.ChainCode);
+            string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/105'/{0}'")).Neuter().ToString(expectedWallet.Network);
+            Assert.Equal(expectedExtendedPubKey, actualAccount.ExtendedPubKey);
+
+            Assert.Equal(20, actualAccount.InternalAddresses.Count);
+
+            for (int k = 0; k < actualAccount.InternalAddresses.Count; k++)
             {
-                Assert.Equal(CoinType.Stratis, expectedWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(1, expectedWallet.LastBlockSyncedHeight);
-                Assert.Equal(block.GetHash(), expectedWallet.LastBlockSyncedHash);
+                HdAddress actualAddress = actualAccount.InternalAddresses.ElementAt(k);
+                PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"1/{k}")).PubKey;
+                BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
+                Assert.Equal(k, actualAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
+                Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
+                Assert.Equal($"m/44'/105'/{0}'/1/{k}", actualAddress.HdPath);
+                Assert.Equal(0, actualAddress.Transactions.Count);
+            }
 
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, actualWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.LastBlockSyncedHash, actualWallet.LastBlockSyncedHash);
-                Assert.Equal(expectedWallet.LastBlockSyncedHeight, actualWallet.LastBlockSyncedHeight);
-
-                AccountRoot accountRoot = actualWallet.AccountsRoot.ElementAt(i);
-                Assert.Equal(1, accountRoot.Accounts.Count);
-
-                for (int j = 0; j < accountRoot.Accounts.Count; j++)
-                {
-                    HdAccount actualAccount = accountRoot.Accounts.ElementAt(j);
-                    Assert.Equal($"account {j}", actualAccount.Name);
-                    Assert.Equal(j, actualAccount.Index);
-                    Assert.Equal($"m/44'/105'/{j}'", actualAccount.HdPath);
-
-                    var extKey = new ExtKey(Key.Parse(expectedWallet.EncryptedSeed, "test", expectedWallet.Network), expectedWallet.ChainCode);
-                    string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/105'/{j}'")).Neuter().ToString(expectedWallet.Network);
-                    Assert.Equal(expectedExtendedPubKey, actualAccount.ExtendedPubKey);
-
-                    Assert.Equal(20, actualAccount.InternalAddresses.Count);
-
-                    for (int k = 0; k < actualAccount.InternalAddresses.Count; k++)
-                    {
-                        HdAddress actualAddress = actualAccount.InternalAddresses.ElementAt(k);
-                        PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"1/{k}")).PubKey;
-                        BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
-                        Assert.Equal(k, actualAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
-                        Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
-                        Assert.Equal($"m/44'/105'/{j}'/1/{k}", actualAddress.HdPath);
-                        Assert.Equal(0, actualAddress.Transactions.Count);
-                    }
-
-                    Assert.Equal(20, actualAccount.ExternalAddresses.Count);
-                    for (int l = 0; l < actualAccount.ExternalAddresses.Count; l++)
-                    {
-                        HdAddress actualAddress = actualAccount.ExternalAddresses.ElementAt(l);
-                        PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"0/{l}")).PubKey;
-                        BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
-                        Assert.Equal(l, actualAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
-                        Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
-                        Assert.Equal($"m/44'/105'/{j}'/0/{l}", actualAddress.HdPath);
-                        Assert.Equal(0, actualAddress.Transactions.Count);
-                    }
-                }
+            Assert.Equal(20, actualAccount.ExternalAddresses.Count);
+            for (int l = 0; l < actualAccount.ExternalAddresses.Count; l++)
+            {
+                HdAddress actualAddress = actualAccount.ExternalAddresses.ElementAt(l);
+                PubKey expectedAddressPubKey = ExtPubKey.Parse(expectedExtendedPubKey).Derive(new KeyPath($"0/{l}")).PubKey;
+                BitcoinPubKeyAddress expectedAddress = expectedAddressPubKey.GetAddress(expectedWallet.Network);
+                Assert.Equal(l, actualAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, actualAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.ToString(), actualAddress.Address);
+                Assert.Equal(expectedAddressPubKey.ScriptPubKey, actualAddress.Pubkey);
+                Assert.Equal($"m/44'/105'/{0}'/0/{l}", actualAddress.HdPath);
+                Assert.Equal(0, actualAddress.Transactions.Count);
             }
 
             Assert.Equal(2, expectedWallet.BlockLocator.Count);
@@ -290,7 +270,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             walletManager.CreateWallet("test", "mywallet", "this is my magic passphrase", new Mnemonic(Wordlist.English, WordCount.Eighteen));
 
-            HdAccount hdAccount = walletManager.Wallets.Single().AccountsRoot.Single().Accounts.Single();
+            HdAccount hdAccount = walletManager.Wallets.Single().Accounts.Single();
 
             Assert.Equal(100, hdAccount.ExternalAddresses.Count);
             Assert.Equal(100, hdAccount.InternalAddresses.Count);
@@ -389,62 +369,50 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(expectedWallet.Network, recoveredWallet.Network);
             Assert.Equal(expectedWallet.EncryptedSeed, recoveredWallet.EncryptedSeed);
             Assert.Equal(expectedWallet.ChainCode, recoveredWallet.ChainCode);
+            Assert.Equal(expectedWallet.CoinType, recoveredWallet.CoinType);
+            Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
+            Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
 
-            Assert.Equal(1, expectedWallet.AccountsRoot.Count);
-            Assert.Equal(1, recoveredWallet.AccountsRoot.Count);
+            Assert.Equal(1, expectedWallet.Accounts.Count);
+            Assert.Equal(1, recoveredWallet.Accounts.Count);
 
-            for (int i = 0; i < recoveredWallet.AccountsRoot.Count; i++)
+            HdAccount expectedAccount = expectedWallet.Accounts.ElementAt(0);
+            HdAccount recoveredAccount = recoveredWallet.Accounts.ElementAt(0);
+
+            Assert.Equal(expectedAccount.Name, recoveredAccount.Name);
+            Assert.Equal(expectedAccount.Index, recoveredAccount.Index);
+            Assert.Equal(expectedAccount.HdPath, recoveredAccount.HdPath);
+            Assert.Equal(expectedAccount.ExtendedPubKey, expectedAccount.ExtendedPubKey);
+
+            Assert.Equal(20, recoveredAccount.InternalAddresses.Count);
+
+            for (int k = 0; k < recoveredAccount.InternalAddresses.Count; k++)
             {
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, recoveredWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
-                Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
-
-                AccountRoot recoveredAccountRoot = recoveredWallet.AccountsRoot.ElementAt(i);
-                AccountRoot expectedAccountRoot = expectedWallet.AccountsRoot.ElementAt(i);
-
-                Assert.Equal(1, recoveredAccountRoot.Accounts.Count);
-                Assert.Equal(1, expectedAccountRoot.Accounts.Count);
-
-                for (int j = 0; j < expectedAccountRoot.Accounts.Count; j++)
-                {
-                    HdAccount expectedAccount = expectedAccountRoot.Accounts.ElementAt(j);
-                    HdAccount recoveredAccount = recoveredAccountRoot.Accounts.ElementAt(j);
-                    Assert.Equal(expectedAccount.Name, recoveredAccount.Name);
-                    Assert.Equal(expectedAccount.Index, recoveredAccount.Index);
-                    Assert.Equal(expectedAccount.HdPath, recoveredAccount.HdPath);
-                    Assert.Equal(expectedAccount.ExtendedPubKey, expectedAccount.ExtendedPubKey);
-
-                    Assert.Equal(20, recoveredAccount.InternalAddresses.Count);
-
-                    for (int k = 0; k < recoveredAccount.InternalAddresses.Count; k++)
-                    {
-                        HdAddress expectedAddress = expectedAccount.InternalAddresses.ElementAt(k);
-                        HdAddress recoveredAddress = recoveredAccount.InternalAddresses.ElementAt(k);
-                        Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
-                        Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
-                        Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
-                        Assert.Equal(0, expectedAddress.Transactions.Count);
-                        Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
-                    }
-
-                    Assert.Equal(20, recoveredAccount.ExternalAddresses.Count);
-                    for (int l = 0; l < recoveredAccount.ExternalAddresses.Count; l++)
-                    {
-                        HdAddress expectedAddress = expectedAccount.ExternalAddresses.ElementAt(l);
-                        HdAddress recoveredAddress = recoveredAccount.ExternalAddresses.ElementAt(l);
-                        Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
-                        Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
-                        Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
-                        Assert.Equal(0, expectedAddress.Transactions.Count);
-                        Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
-                    }
-                }
+                HdAddress expectedAddress = expectedAccount.InternalAddresses.ElementAt(k);
+                HdAddress recoveredAddress = recoveredAccount.InternalAddresses.ElementAt(k);
+                Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
+                Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
+                Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
+                Assert.Equal(0, expectedAddress.Transactions.Count);
+                Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
             }
 
+            Assert.Equal(20, recoveredAccount.ExternalAddresses.Count);
+            for (int l = 0; l < recoveredAccount.ExternalAddresses.Count; l++)
+            {
+                HdAddress expectedAddress = expectedAccount.ExternalAddresses.ElementAt(l);
+                HdAddress recoveredAddress = recoveredAccount.ExternalAddresses.ElementAt(l);
+                Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
+                Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
+                Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
+                Assert.Equal(0, expectedAddress.Transactions.Count);
+                Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
+            }
+                
             Assert.Equal(2, expectedWallet.BlockLocator.Count);
             Assert.Equal(2, recoveredWallet.BlockLocator.Count);
             Assert.Equal(expectedWallet.BlockLocator.ElementAt(0), recoveredWallet.BlockLocator.ElementAt(0));
@@ -480,62 +448,50 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(expectedWallet.Network, recoveredWallet.Network);
             Assert.Equal(expectedWallet.EncryptedSeed, recoveredWallet.EncryptedSeed);
             Assert.Equal(expectedWallet.ChainCode, recoveredWallet.ChainCode);
+            Assert.Equal(expectedWallet.CoinType, recoveredWallet.CoinType);
 
-            Assert.Equal(1, expectedWallet.AccountsRoot.Count);
-            Assert.Equal(1, recoveredWallet.AccountsRoot.Count);
+            Assert.Equal(1, expectedWallet.Accounts.Count);
+            Assert.Equal(1, recoveredWallet.Accounts.Count);
 
-            for (int i = 0; i < recoveredWallet.AccountsRoot.Count; i++)
+            Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
+            Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
+
+            HdAccount expectedAccount = expectedWallet.Accounts.ElementAt(0);
+            HdAccount recoveredAccount = recoveredWallet.Accounts.ElementAt(0);
+            Assert.Equal(expectedAccount.Name, recoveredAccount.Name);
+            Assert.Equal(expectedAccount.Index, recoveredAccount.Index);
+            Assert.Equal(expectedAccount.HdPath, recoveredAccount.HdPath);
+            Assert.Equal(expectedAccount.ExtendedPubKey, expectedAccount.ExtendedPubKey);
+
+            Assert.Equal(20, recoveredAccount.InternalAddresses.Count);
+
+            for (int k = 0; k < recoveredAccount.InternalAddresses.Count; k++)
             {
-                Assert.Equal(expectedWallet.AccountsRoot.ElementAt(i).CoinType, recoveredWallet.AccountsRoot.ElementAt(i).CoinType);
-                Assert.Equal(expectedWallet.LastBlockSyncedHeight, recoveredWallet.LastBlockSyncedHeight);
-                Assert.Equal(expectedWallet.LastBlockSyncedHash, recoveredWallet.LastBlockSyncedHash);
-
-                AccountRoot recoveredAccountRoot = recoveredWallet.AccountsRoot.ElementAt(i);
-                AccountRoot expectedAccountRoot = expectedWallet.AccountsRoot.ElementAt(i);
-
-                Assert.Equal(1, recoveredAccountRoot.Accounts.Count);
-                Assert.Equal(1, expectedAccountRoot.Accounts.Count);
-
-                for (int j = 0; j < expectedAccountRoot.Accounts.Count; j++)
-                {
-                    HdAccount expectedAccount = expectedAccountRoot.Accounts.ElementAt(j);
-                    HdAccount recoveredAccount = recoveredAccountRoot.Accounts.ElementAt(j);
-                    Assert.Equal(expectedAccount.Name, recoveredAccount.Name);
-                    Assert.Equal(expectedAccount.Index, recoveredAccount.Index);
-                    Assert.Equal(expectedAccount.HdPath, recoveredAccount.HdPath);
-                    Assert.Equal(expectedAccount.ExtendedPubKey, expectedAccount.ExtendedPubKey);
-
-                    Assert.Equal(20, recoveredAccount.InternalAddresses.Count);
-
-                    for (int k = 0; k < recoveredAccount.InternalAddresses.Count; k++)
-                    {
-                        HdAddress expectedAddress = expectedAccount.InternalAddresses.ElementAt(k);
-                        HdAddress recoveredAddress = recoveredAccount.InternalAddresses.ElementAt(k);
-                        Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
-                        Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
-                        Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
-                        Assert.Equal(0, expectedAddress.Transactions.Count);
-                        Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
-                    }
-
-                    Assert.Equal(20, recoveredAccount.ExternalAddresses.Count);
-                    for (int l = 0; l < recoveredAccount.ExternalAddresses.Count; l++)
-                    {
-                        HdAddress expectedAddress = expectedAccount.ExternalAddresses.ElementAt(l);
-                        HdAddress recoveredAddress = recoveredAccount.ExternalAddresses.ElementAt(l);
-                        Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
-                        Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
-                        Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
-                        Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
-                        Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
-                        Assert.Equal(0, expectedAddress.Transactions.Count);
-                        Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
-                    }
-                }
+                HdAddress expectedAddress = expectedAccount.InternalAddresses.ElementAt(k);
+                HdAddress recoveredAddress = recoveredAccount.InternalAddresses.ElementAt(k);
+                Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
+                Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
+                Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
+                Assert.Equal(0, expectedAddress.Transactions.Count);
+                Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
             }
 
+            Assert.Equal(20, recoveredAccount.ExternalAddresses.Count);
+            for (int l = 0; l < recoveredAccount.ExternalAddresses.Count; l++)
+            {
+                HdAddress expectedAddress = expectedAccount.ExternalAddresses.ElementAt(l);
+                HdAddress recoveredAddress = recoveredAccount.ExternalAddresses.ElementAt(l);
+                Assert.Equal(expectedAddress.Index, recoveredAddress.Index);
+                Assert.Equal(expectedAddress.ScriptPubKey, recoveredAddress.ScriptPubKey);
+                Assert.Equal(expectedAddress.Address, recoveredAddress.Address);
+                Assert.Equal(expectedAddress.Pubkey, recoveredAddress.Pubkey);
+                Assert.Equal(expectedAddress.HdPath, recoveredAddress.HdPath);
+                Assert.Equal(0, expectedAddress.Transactions.Count);
+                Assert.Equal(expectedAddress.Transactions.Count, recoveredAddress.Transactions.Count);
+            }
+           
             Assert.Equal(2, expectedWallet.BlockLocator.Count);
             Assert.Equal(2, recoveredWallet.BlockLocator.Count);
             Assert.Equal(expectedWallet.BlockLocator.ElementAt(0), recoveredWallet.BlockLocator.ElementAt(0));
@@ -588,7 +544,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount { Name = "unused" });
+            wallet.Accounts.Add(new HdAccount { Name = "unused" });
             walletManager.Wallets.Add(wallet);
 
             HdAccount result = walletManager.GetUnusedAccount("testWallet", "password");
@@ -605,7 +561,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Clear();
+            wallet.Accounts.Clear();
             walletManager.Wallets.Add(wallet);
 
             HdAccount result = walletManager.GetUnusedAccount("testWallet", "password");
@@ -626,7 +582,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount { Name = "unused" });
+            wallet.Accounts.Add(new HdAccount { Name = "unused" });
             walletManager.Wallets.Add(wallet);
 
             HdAccount result = walletManager.GetUnusedAccount(wallet, "password");
@@ -643,7 +599,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Clear();
+            wallet.Accounts.Clear();
             walletManager.Wallets.Add(wallet);
 
             HdAccount result = walletManager.GetUnusedAccount(wallet, "password");
@@ -660,11 +616,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Clear();
+            wallet.Accounts.Clear();
 
-            HdAccount result = wallet.AddNewAccount("password", (CoinType)this.Network.Consensus.CoinType, DateTimeOffset.UtcNow);
+            HdAccount result = wallet.AddNewAccount("password", DateTimeOffset.UtcNow);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.Count);
+            Assert.Equal(1, wallet.Accounts.Count);
             var extKey = new ExtKey(Key.Parse(wallet.EncryptedSeed, "password", wallet.Network), wallet.ChainCode);
             string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/0'/0'")).Neuter().ToString(wallet.Network);
             Assert.Equal($"account 0", result.Name);
@@ -684,11 +640,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("testWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount { Name = "unused" });
+            wallet.Accounts.Add(new HdAccount { Name = "unused" });
 
-            HdAccount result = wallet.AddNewAccount("password", (CoinType)this.Network.Consensus.CoinType, DateTimeOffset.UtcNow);
+            HdAccount result = wallet.AddNewAccount("password", DateTimeOffset.UtcNow);
 
-            Assert.Equal(2, wallet.AccountsRoot.ElementAt(0).Accounts.Count);
+            Assert.Equal(2, wallet.Accounts.Count);
             var extKey = new ExtKey(Key.Parse(wallet.EncryptedSeed, "password", wallet.Network), wallet.ChainCode);
             string expectedExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/0'/1'")).Neuter().ToString(wallet.Network);
             Assert.Equal($"account 1", result.Name);
@@ -733,7 +689,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "myAccount",
@@ -771,7 +727,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
             var bob = new BitcoinSecret(new Key(), KnownNetworks.RegTest);
             var alice = new BitcoinSecret(new Key(), KnownNetworks.RegTest);
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "myAccount",
@@ -797,7 +753,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             });
             walletManager.Wallets.Add(wallet);
 
-            HdAddress result = walletManager.GetUnusedChangeAddress(new WalletAccountReference(wallet.Name, wallet.AccountsRoot.First().Accounts.First().Name));
+            HdAddress result = walletManager.GetUnusedChangeAddress(new WalletAccountReference(wallet.Name, wallet.Accounts.First().Name));
 
             Assert.Equal(alice.GetAddress().ToString(), result.Address);
         }
@@ -814,7 +770,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var extKey = new ExtKey(Key.Parse(wallet.EncryptedSeed, "password", wallet.Network), wallet.ChainCode);
             string accountExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/0'/0'")).Neuter().ToString(wallet.Network);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "myAccount",
@@ -825,7 +781,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             });
             walletManager.Wallets.Add(wallet);
 
-            HdAddress result = walletManager.GetUnusedChangeAddress(new WalletAccountReference(wallet.Name, wallet.AccountsRoot.First().Accounts.First().Name));
+            HdAddress result = walletManager.GetUnusedChangeAddress(new WalletAccountReference(wallet.Name, wallet.Accounts.First().Name));
 
             Assert.NotNull(result.Address);
         }
@@ -840,7 +796,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
             var extKey = new ExtKey(Key.Parse(wallet.EncryptedSeed, "password", wallet.Network), wallet.ChainCode);
             string accountExtendedPubKey = extKey.Derive(new KeyPath($"m/44'/0'/0'")).Neuter().ToString(wallet.Network);
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "myAccount",
@@ -883,7 +839,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "myAccount",
@@ -942,7 +898,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 ExtendedPubKey = "blabla"
             };
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(account);
+            wallet.Accounts.Add(account);
             walletManager.Wallets.Add(wallet);
 
             AccountHistory accountHistory = walletManager.GetHistory(account);
@@ -975,7 +931,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 InternalAddresses = new List<HdAddress>(),
                 ExtendedPubKey = "blabla"
             };
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(account);
+            wallet.Accounts.Add(account);
             walletManager.Wallets.Add(wallet);
 
             AccountHistory result = walletManager.GetHistory(account);
@@ -990,7 +946,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         {
             Assert.Throws<WalletException>(() =>
             {
-                var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object,new WalletSettings(NodeSettings.Default(this.Network)),
+                var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                     CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
                 walletManager.GetHistory("noname");
             });
@@ -1026,26 +982,16 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount { Name = "Account 0" });
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount { Name = "Account 1" });
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                CoinType = CoinType.Stratis,
-                Accounts = new List<HdAccount> { new HdAccount { Name = "Account 2" } }
-            });
-            wallet.AccountsRoot.Add(new AccountRoot()
-            {
-                CoinType = CoinType.Bitcoin,
-                Accounts = new List<HdAccount> { new HdAccount { Name = "Account 3" } }
-            });
+            wallet.Accounts.Add(new HdAccount { Name = "Account 0" });
+            wallet.Accounts.Add(new HdAccount { Name = "Account 1" });
+
             walletManager.Wallets.Add(wallet);
 
             IEnumerable<HdAccount> result = walletManager.GetAccounts("myWallet");
 
-            Assert.Equal(3, result.Count());
+            Assert.Equal(2, result.Count());
             Assert.Equal("Account 0", result.ElementAt(0).Name);
             Assert.Equal("Account 1", result.ElementAt(1).Name);
-            Assert.Equal("Account 3", result.ElementAt(2).Name);
         }
 
         [Fact]
@@ -1054,7 +1000,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.Clear();
+            wallet.Accounts.Clear();
             walletManager.Wallets.Add(wallet);
 
             IEnumerable<HdAccount> result = walletManager.GetAccounts("myWallet");
@@ -1100,7 +1046,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
+            wallet.CoinType = CoinType.Stratis;
             walletManager.Wallets.Add(wallet);
 
             int result = walletManager.LastBlockHeight();
@@ -1134,11 +1080,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
+            wallet.CoinType = CoinType.Bitcoin;
             wallet.LastBlockSyncedHeight = 20;
             wallet.LastBlockSyncedHash = new uint256(20);
             Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Bitcoin;
+            wallet2.CoinType = CoinType.Bitcoin;
             wallet2.LastBlockSyncedHeight = 56;
             wallet2.LastBlockSyncedHash = new uint256(56);
             walletManager.Wallets.Add(wallet);
@@ -1148,7 +1094,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             Assert.Equal(new uint256(20), result);
         }
-        
+
         [Fact]
         public void NoLastReceivedBlockHashInWalletReturnsChainTip()
         {
@@ -1156,7 +1102,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
+            wallet.CoinType = CoinType.Stratis;
             walletManager.Wallets.Add(wallet);
 
             uint256 result = walletManager.LastReceivedBlockHash();
@@ -1170,7 +1116,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 1, 9, 10),
                 InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 2, 9, 10)
@@ -1193,35 +1139,32 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Name = "First expectation",
                 ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 1, 9, 10),
                 InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 2, 9, 10)
             });
 
-            wallet.AccountsRoot.Add(new AccountRoot()
+            wallet.Accounts = new List<HdAccount>
             {
-                CoinType = CoinType.Stratis,
-                Accounts = new List<HdAccount>
+                new HdAccount
                 {
-                    new HdAccount {
-                        ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 8,9,10),
-                        InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 8,9,10)
-                    }
+                    ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 8, 9, 10),
+                    InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 8, 9, 10)
                 }
-            });
+            };
 
             Wallet wallet2 = this.walletFixture.GenerateBlankWallet("myWallet2", "password");
-            wallet2.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet2.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet2.CoinType = CoinType.Stratis;
+            wallet2.Accounts.Add(new HdAccount
             {
                 ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 1, 3, 5, 7, 9, 10),
                 InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 2, 4, 6, 8, 9, 10)
             });
 
             Wallet wallet3 = this.walletFixture.GenerateBlankWallet("myWallet3", "password");
-            wallet3.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet3.Accounts.Add(new HdAccount
             {
                 Name = "Second expectation",
                 ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 5, 9, 11),
@@ -1237,19 +1180,19 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(4, result.Count());
             UnspentOutputReference info = result[0];
             Assert.Equal("Second expectation", info.Account.Name);
-            Assert.Equal(wallet3.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Address, info.Address.Address);
+            Assert.Equal(wallet3.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Address, info.Address.Address);
             Assert.Equal(5, info.Transaction.BlockHeight);
             info = result[1];
             Assert.Equal("Second expectation", info.Account.Name);
-            Assert.Equal(wallet3.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Address, info.Address.Address);
+            Assert.Equal(wallet3.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Address, info.Address.Address);
             Assert.Equal(9, info.Transaction.BlockHeight);
             info = result[2];
             Assert.Equal("Second expectation", info.Account.Name);
-            Assert.Equal(wallet3.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Address, info.Address.Address);
+            Assert.Equal(wallet3.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Address, info.Address.Address);
             Assert.Equal(6, info.Transaction.BlockHeight);
             info = result[3];
             Assert.Equal("Second expectation", info.Account.Name);
-            Assert.Equal(wallet3.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Address, info.Address.Address);
+            Assert.Equal(wallet3.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Address, info.Address.Address);
             Assert.Equal(9, info.Transaction.BlockHeight);
         }
 
@@ -1260,7 +1203,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Name = "First expectation",
                 ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(this.Network, 1, 9, 11).Concat(WalletTestsHelpers.CreateSpentTransactionsOfBlockHeights(this.Network, 1, 9, 11)).ToList(),
@@ -1274,22 +1217,22 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(4, result.Count());
             UnspentOutputReference info = result[0];
             Assert.Equal("First expectation", info.Account.Name);
-            Assert.Equal(wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Address, info.Address.Address);
+            Assert.Equal(wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Address, info.Address.Address);
             Assert.Equal(1, info.Transaction.BlockHeight);
             Assert.Null(info.Transaction.SpendingDetails);
             info = result[1];
             Assert.Equal("First expectation", info.Account.Name);
-            Assert.Equal(wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Address, info.Address.Address);
+            Assert.Equal(wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Address, info.Address.Address);
             Assert.Equal(9, info.Transaction.BlockHeight);
             Assert.Null(info.Transaction.SpendingDetails);
             info = result[2];
             Assert.Equal("First expectation", info.Account.Name);
-            Assert.Equal(wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Address, info.Address.Address);
+            Assert.Equal(wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Address, info.Address.Address);
             Assert.Equal(2, info.Transaction.BlockHeight);
             Assert.Null(info.Transaction.SpendingDetails);
             info = result[3];
             Assert.Equal("First expectation", info.Account.Name);
-            Assert.Equal(wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Address, info.Address.Address);
+            Assert.Equal(wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Address, info.Address.Address);
             Assert.Equal(9, info.Transaction.BlockHeight);
             Assert.Null(info.Transaction.SpendingDetails);
         }
@@ -1308,34 +1251,13 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         }
 
         [Fact]
-        public void GetSpendableTransactionsWithoutWalletsOfWalletManagerCoinTypeReturnsEmptyList()
-        {
-            ConcurrentChain chain = WalletTestsHelpers.GenerateChainWithHeight(10, this.Network);
-            var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
-                CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
-
-            Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet2", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
-            {
-                ExternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 1, 3, 5, 7, 9, 10),
-                InternalAddresses = WalletTestsHelpers.CreateUnspentTransactionsOfBlockHeights(KnownNetworks.StratisMain, 2, 4, 6, 8, 9, 10)
-            });
-            walletManager.Wallets.Add(wallet);
-
-            IEnumerable<UnspentOutputReference> result = walletManager.GetSpendableTransactionsInWallet("myWallet2", confirmations: 1);
-
-            Assert.Empty(result);
-        }
-
-        [Fact]
         public void GetSpendableTransactionsWithOnlySpentTransactionsReturnsEmptyList()
         {
             ConcurrentChain chain = WalletTestsHelpers.GenerateChainWithHeight(10, this.Network);
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Name = "First expectation",
                 ExternalAddresses = WalletTestsHelpers.CreateSpentTransactionsOfBlockHeights(this.Network, 1, 9, 10),
@@ -1375,7 +1297,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 HdPath = "m/44'/0'/0'/0/0",
             };
 
-            data.wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            data.wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 ExternalAddresses = new List<HdAddress> {
@@ -1406,7 +1328,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                     HdPath = "m/44'/0'/0'/0/0",
                 };
 
-                data.wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+                data.wallet.Accounts.Add(new HdAccount
                 {
                     Index = 0,
                     ExternalAddresses = new List<HdAddress>(),
@@ -1466,7 +1388,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1489,20 +1411,20 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.LoadKeysLookupLock();
             walletManager.ProcessTransaction(transaction);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(transaction.Outputs[1].Value, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).DestinationScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
-            TransactionData destinationAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+            TransactionData destinationAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), destinationAddressResult.Id);
             Assert.Equal(transaction.Outputs[1].Value, destinationAddressResult.Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, destinationAddressResult.ScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -1555,7 +1477,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1580,15 +1502,15 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.LoadKeysLookupLock();
             walletManager.ProcessTransaction(transaction);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(0, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.Count);
 
-            Assert.Equal(0, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+            Assert.Equal(0, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -1641,7 +1563,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1665,21 +1587,21 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             walletManager.ProcessTransaction(transaction);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(0, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.Count);
             Assert.Equal(1, spentAddressResult.Transactions.ElementAt(0).BlockHeight);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData destinationAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData destinationAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Null(destinationAddressResult.BlockHeight);
             Assert.Equal(transaction.GetHash(), destinationAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, destinationAddressResult.Amount);
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, destinationAddressResult.ScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.ElementAt(0);
             Assert.Null(destinationAddressResult.BlockHeight);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[1].Value, changeAddressResult.Amount);
@@ -1722,7 +1644,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1746,14 +1668,14 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.LoadKeysLookupLock();
             walletManager.ProcessTransaction(transaction);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(transaction.Outputs[1].Value, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).DestinationScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -1806,7 +1728,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1833,22 +1755,22 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             int blockHeight = chainInfo.chain.GetBlock(block.GetHash()).Height;
             walletManager.ProcessTransaction(transaction, blockHeight);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(transaction.Outputs[1].Value, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).DestinationScriptPubKey);
             Assert.Equal(blockHeight - 1, spentAddressResult.Transactions.ElementAt(0).BlockHeight);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
-            TransactionData destinationAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+            TransactionData destinationAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
             Assert.Equal(blockHeight, destinationAddressResult.BlockHeight);
             Assert.Equal(transaction.GetHash(), destinationAddressResult.Id);
             Assert.Equal(transaction.Outputs[1].Value, destinationAddressResult.Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, destinationAddressResult.ScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(blockHeight, destinationAddressResult.BlockHeight);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
@@ -1902,7 +1824,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
             spendingAddress.Transactions.Add(spendingTransaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -1928,22 +1850,22 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             walletManager.ProcessTransaction(transaction, block: block);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(transaction.Outputs[1].Value, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).DestinationScriptPubKey);
             Assert.Equal(chainInfo.block.GetHash(), spentAddressResult.Transactions.ElementAt(0).BlockHash);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
-            TransactionData destinationAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+            TransactionData destinationAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
             Assert.Equal(block.GetHash(), destinationAddressResult.BlockHash);
             Assert.Equal(transaction.GetHash(), destinationAddressResult.Id);
             Assert.Equal(transaction.Outputs[1].Value, destinationAddressResult.Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, destinationAddressResult.ScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(block.GetHash(), destinationAddressResult.BlockHash);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
@@ -2003,7 +1925,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
         //spendingAddress.Transactions.Add(spendingTransaction);
 
-        //wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+        //wallet.Accounts.Add(new HdAccount
         //{
         //    Index = 0,
         //    Name = "account1",
@@ -2040,15 +1962,15 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //        var result = walletManager.SendTransaction(transaction.ToHex());
 
         //        Assert.True(result);
-        //        var spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+        //        var spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
         //        Assert.Equal(1, spendingAddress.Transactions.Count);
         //        Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
         //        Assert.Equal(0, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.Count);
 
-        //        Assert.Equal(0, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+        //        Assert.Equal(0, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
 
-        //        Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-        //        var changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+        //        Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+        //        var changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
         //        Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
         //        Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
         //        Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -2116,7 +2038,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
         //spendingAddress.Transactions.Add(spendingTransaction);
 
-        //wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+        //wallet.Accounts.Add(new HdAccount
         //{
         //    Index = 0,
         //    Name = "account1",
@@ -2156,15 +2078,15 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //        // verify AcceptToMemoryPool has been called.
         //        mempoolValidator.Verify();
 
-        //        var spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+        //        var spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
         //        Assert.Equal(1, spendingAddress.Transactions.Count);
         //        Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
         //        Assert.Equal(0, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.Count);
 
-        //        Assert.Equal(0, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+        //        Assert.Equal(0, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
 
-        //        Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-        //        var changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+        //        Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+        //        var changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
         //        Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
         //        Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
         //        Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -2232,7 +2154,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //TransactionData spendingTransaction = WalletTestsHelpers.CreateTransactionDataFromFirstBlock(chainInfo);
         //spendingAddress.Transactions.Add(spendingTransaction);
 
-        //wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+        //wallet.Accounts.Add(new HdAccount
         //{
         //    Index = 0,
         //    Name = "account1",
@@ -2272,12 +2194,12 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         //        // verify AcceptToMemoryPool has been called.
         //        mempoolValidator.Verify();
 
-        //        var spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+        //        var spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
         //        Assert.Equal(1, spendingAddress.Transactions.Count);
         //        Assert.Null(spentAddressResult.Transactions.ElementAt(0).SpendingDetails);
         //        Assert.Null(spentAddressResult.Transactions.ElementAt(0).SpendingDetails);
-        //        Assert.Equal(0, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
-        //        Assert.Equal(0, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+        //        Assert.Equal(0, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+        //        Assert.Equal(0, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
         //        Assert.Equal(0, payloads.Count);
         //    }
         //}
@@ -2294,7 +2216,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             chainedHeader = WalletTestsHelpers.AppendBlock(this.Network, chainedHeader, concurrentchain).ChainedHeader;
 
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Name = "First account",
                 ExternalAddresses = WalletTestsHelpers.CreateSpentTransactionsOfBlockHeights(this.Network, 1, 2, 3, 4, 5).ToList(),
@@ -2304,22 +2226,22 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             // reorg at block 3
 
             // Trx at block 0 is not spent
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Transactions.First().Id = trxId >> trxCount++; ;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Transactions.First().SpendingDetails = null;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.First().Id = trxId >> trxCount++;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.First().SpendingDetails = null;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Transactions.First().Id = trxId >> trxCount++; ;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0).Transactions.First().SpendingDetails = null;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.First().Id = trxId >> trxCount++;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.First().SpendingDetails = null;
 
             // Trx at block 2 is spent in block 3, after reorg it will not be spendable.
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.BlockHeight = 3;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.BlockHeight = 3;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.BlockHeight = 3;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(1).Transactions.First().SpendingDetails.BlockHeight = 3;
 
             // Trx at block 3 is spent at block 5, after reorg it will be spendable.
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++; ;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.BlockHeight = 5;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++; ;
-            wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.BlockHeight = 5;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++; ;
+            wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.BlockHeight = 5;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.TransactionId = trxId >> trxCount++; ;
+            wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(2).Transactions.First().SpendingDetails.BlockHeight = 5;
 
             var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, new Mock<ConcurrentChain>().Object, new WalletSettings(NodeSettings.Default(this.Network)),
                 CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
@@ -2332,7 +2254,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(chainedHeader.HashBlock, wallet.LastBlockSyncedHash);
             Assert.Equal(chainedHeader.HashBlock, walletManager.WalletTipHash);
 
-            HdAccount account = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0);
+            HdAccount account = wallet.Accounts.ElementAt(0);
 
             Assert.Equal(6, account.InternalAddresses.Concat(account.ExternalAddresses).SelectMany(r => r.Transactions).Count());
             Assert.True(account.InternalAddresses.Concat(account.ExternalAddresses).SelectMany(r => r.Transactions).All(r => r.BlockHeight <= chainedHeader.Height));
@@ -2406,7 +2328,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Transaction transaction = WalletTestsHelpers.SetupValidTransaction(wallet, "password", spendingAddress, destinationKeys.PubKey, changeAddress, new Money(7500), new Money(5000));
             Block block = WalletTestsHelpers.AppendTransactionInNewBlockToChain(chainInfo.chain, transaction);
 
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Index = 0,
                 Name = "account1",
@@ -2429,20 +2351,20 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             ChainedHeader chainedBlock = chainInfo.chain.GetBlock(block.GetHash());
             walletManager.ProcessBlock(block, chainedBlock);
 
-            HdAddress spentAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
+            HdAddress spentAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(0);
             Assert.Equal(1, spendingAddress.Transactions.Count);
             Assert.Equal(transaction.GetHash(), spentAddressResult.Transactions.ElementAt(0).SpendingDetails.TransactionId);
             Assert.Equal(transaction.Outputs[1].Value, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, spentAddressResult.Transactions.ElementAt(0).SpendingDetails.Payments.ElementAt(0).DestinationScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
-            TransactionData destinationAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.Count);
+            TransactionData destinationAddressResult = wallet.Accounts.ElementAt(0).ExternalAddresses.ElementAt(1).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), destinationAddressResult.Id);
             Assert.Equal(transaction.Outputs[1].Value, destinationAddressResult.Amount);
             Assert.Equal(transaction.Outputs[1].ScriptPubKey, destinationAddressResult.ScriptPubKey);
 
-            Assert.Equal(1, wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
-            TransactionData changeAddressResult = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
+            Assert.Equal(1, wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.Count);
+            TransactionData changeAddressResult = wallet.Accounts.ElementAt(0).InternalAddresses.ElementAt(0).Transactions.ElementAt(0);
             Assert.Equal(transaction.GetHash(), changeAddressResult.Id);
             Assert.Equal(transaction.Outputs[0].Value, changeAddressResult.Amount);
             Assert.Equal(transaction.Outputs[0].ScriptPubKey, changeAddressResult.ScriptPubKey);
@@ -2512,7 +2434,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(WalletTestsHelpers.CreateWallet("wallet1"));
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = walletManager.Wallets.First().AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = walletManager.Wallets.First().Accounts.First();
 
             // add two unconfirmed transactions
             for (int i = 1; i < 3; i++)
@@ -2561,8 +2483,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var accounts = new List<HdAccount> { account, account2 };
 
             Wallet wallet = WalletTestsHelpers.CreateWallet("myWallet");
-            wallet.AccountsRoot.Add(new AccountRoot());
-            wallet.AccountsRoot.First().Accounts = accounts;
+            wallet.Accounts = accounts;
 
             walletManager.Wallets.Add(wallet);
 
@@ -2595,7 +2516,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(WalletTestsHelpers.CreateWallet("wallet1"));
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = walletManager.Wallets.First().AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = walletManager.Wallets.First().Accounts.First();
 
             // add two confirmed transactions
             for (int i = 1; i < 3; i++)
@@ -2620,7 +2541,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(WalletTestsHelpers.CreateWallet("wallet1"));
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = walletManager.Wallets.First().AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = walletManager.Wallets.First().Accounts.First();
 
             // add two spent transactions
             for (int i = 1; i < 3; i++)
@@ -2645,7 +2566,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(WalletTestsHelpers.CreateWallet("wallet1"));
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = walletManager.Wallets.First().AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = walletManager.Wallets.First().Accounts.First();
 
             // add two spent transactions
             for (int i = 1; i < 3; i++)
@@ -2676,7 +2597,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(WalletTestsHelpers.CreateWallet("wallet1"));
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = walletManager.Wallets.First().AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = walletManager.Wallets.First().Accounts.First();
 
             // add two spent transactions
             for (int i = 1; i < 3; i++)
@@ -2721,14 +2642,14 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(wallet.EncryptedSeed, resultWallet.EncryptedSeed);
             Assert.Equal(wallet.ChainCode, resultWallet.ChainCode);
             Assert.Equal(wallet.Network, resultWallet.Network);
-            Assert.Equal(wallet.AccountsRoot.Count, resultWallet.AccountsRoot.Count);
+            Assert.Equal(wallet.Accounts.Count, resultWallet.Accounts.Count);
 
             var resultWallet2 = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(Path.Combine(dataFolder.WalletPath + $"/wallet2.wallet.json")));
             Assert.Equal(wallet2.Name, resultWallet2.Name);
             Assert.Equal(wallet2.EncryptedSeed, resultWallet2.EncryptedSeed);
             Assert.Equal(wallet2.ChainCode, resultWallet2.ChainCode);
             Assert.Equal(wallet2.Network, resultWallet2.Network);
-            Assert.Equal(wallet2.AccountsRoot.Count, resultWallet2.AccountsRoot.Count);
+            Assert.Equal(wallet2.Accounts.Count, resultWallet2.Accounts.Count);
         }
 
         [Fact]
@@ -2757,7 +2678,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(wallet.EncryptedSeed, resultWallet.EncryptedSeed);
             Assert.Equal(wallet.ChainCode, resultWallet.ChainCode);
             Assert.Equal(wallet.Network, resultWallet.Network);
-            Assert.Equal(wallet.AccountsRoot.Count, resultWallet.AccountsRoot.Count);
+            Assert.Equal(wallet.Accounts.Count, resultWallet.Accounts.Count);
         }
 
         [Fact]
@@ -2804,7 +2725,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         public void LoadKeysLookupWithKeysLoadsKeyLookup()
         {
             Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).Accounts.Add(new HdAccount
+            wallet.Accounts.Add(new HdAccount
             {
                 Name = "First account",
                 ExternalAddresses = WalletTestsHelpers.CreateSpentTransactionsOfBlockHeights(this.Network, 1, 2, 3).ToList(),
@@ -2820,12 +2741,12 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.NotNull(walletManager.scriptToAddressLookup);
             Assert.Equal(6, walletManager.scriptToAddressLookup.Count);
 
-            ICollection<HdAddress> externalAddresses = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).ExternalAddresses;
+            ICollection<HdAddress> externalAddresses = wallet.Accounts.ElementAt(0).ExternalAddresses;
             Assert.Equal(externalAddresses.ElementAt(0).Address, walletManager.scriptToAddressLookup[externalAddresses.ElementAt(0).ScriptPubKey].Address);
             Assert.Equal(externalAddresses.ElementAt(1).Address, walletManager.scriptToAddressLookup[externalAddresses.ElementAt(1).ScriptPubKey].Address);
             Assert.Equal(externalAddresses.ElementAt(2).Address, walletManager.scriptToAddressLookup[externalAddresses.ElementAt(2).ScriptPubKey].Address);
 
-            ICollection<HdAddress> internalAddresses = wallet.AccountsRoot.ElementAt(0).Accounts.ElementAt(0).InternalAddresses;
+            ICollection<HdAddress> internalAddresses = wallet.Accounts.ElementAt(0).InternalAddresses;
             Assert.Equal(internalAddresses.ElementAt(0).Address, walletManager.scriptToAddressLookup[internalAddresses.ElementAt(0).ScriptPubKey].Address);
             Assert.Equal(internalAddresses.ElementAt(1).Address, walletManager.scriptToAddressLookup[internalAddresses.ElementAt(1).ScriptPubKey].Address);
             Assert.Equal(internalAddresses.ElementAt(2).Address, walletManager.scriptToAddressLookup[internalAddresses.ElementAt(2).ScriptPubKey].Address);
@@ -2885,14 +2806,12 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             Assert.Equal(wallet.EncryptedSeed, resultWallet.EncryptedSeed);
             Assert.Equal(wallet.ChainCode, resultWallet.ChainCode);
             Assert.Equal(wallet.Network, resultWallet.Network);
-            Assert.Equal(wallet.AccountsRoot.Count, resultWallet.AccountsRoot.Count);
 
             var resultWallet2 = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(Path.Combine(dataFolder.WalletPath + $"/wallet2.wallet.json")));
             Assert.Equal(wallet2.Name, resultWallet2.Name);
             Assert.Equal(wallet2.EncryptedSeed, resultWallet2.EncryptedSeed);
             Assert.Equal(wallet2.ChainCode, resultWallet2.ChainCode);
             Assert.Equal(wallet2.Network, resultWallet2.Network);
-            Assert.Equal(wallet2.AccountsRoot.Count, resultWallet2.AccountsRoot.Count);
         }
 
         [Fact]
@@ -2949,28 +2868,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
         }
 
         [Fact]
-        public void UpdateLastBlockSyncedHeightWithWalletAccountRootOfDifferentCoinTypeDoesNotUpdateLastSyncedInformation()
-        {
-            Wallet wallet = this.walletFixture.GenerateBlankWallet("myWallet1", "password");
-            wallet.AccountsRoot.ElementAt(0).CoinType = CoinType.Stratis;
-
-            var chain = new ConcurrentChain(wallet.Network);
-            ChainedHeader chainedBlock = WalletTestsHelpers.AppendBlock(this.Network, chain.Genesis, chain).ChainedHeader;
-
-            var walletManager = new WalletManager(this.LoggerFactory.Object, this.Network, chain, new WalletSettings(NodeSettings.Default(this.Network)),
-                CreateDataFolder(this), new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
-            walletManager.Wallets.Add(wallet);
-            walletManager.WalletTipHash = new uint256(125125125);
-
-            walletManager.UpdateLastBlockSyncedHeight(wallet, chainedBlock);
-
-            Assert.Equal(chainedBlock.GetLocator().Blocks, wallet.BlockLocator);
-            Assert.NotEqual(chainedBlock.Height, wallet.LastBlockSyncedHeight);
-            Assert.NotEqual(chainedBlock.HashBlock, wallet.LastBlockSyncedHash);
-            Assert.NotEqual(chainedBlock.HashBlock, walletManager.WalletTipHash);
-        }
-
-        [Fact]
         public void RemoveAllTransactionsInWalletReturnsRemovedTransactionsList()
         {
             // Arrange.
@@ -2984,7 +2881,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(wallet);
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = wallet.AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = wallet.Accounts.First();
 
             // Add two unconfirmed transactions.
             uint256 trxId = uint256.Parse("d6043add63ec364fcb591cf209285d8e60f1cc06186d4dcbce496cdbb4303400");
@@ -3028,7 +2925,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(wallet);
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = wallet.AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = wallet.Accounts.First();
 
             int transactionCount = firstAccount.GetCombinedAddresses().SelectMany(a => a.Transactions).Count();
             Assert.Equal(0, transactionCount);
@@ -3055,7 +2952,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(wallet);
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = wallet.AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = wallet.Accounts.First();
 
             // Add two unconfirmed transactions.
             uint256 trxId = uint256.Parse("d6043add63ec364fcb591cf209285d8e60f1cc06186d4dcbce496cdbb4303400");
@@ -3101,7 +2998,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Wallets.Add(wallet);
             WalletTestsHelpers.AddAddressesToWallet(walletManager, 20);
 
-            HdAccount firstAccount = wallet.AccountsRoot.First().Accounts.First();
+            HdAccount firstAccount = wallet.Accounts.First();
 
             // Add two unconfirmed transactions.
             uint256 trxId = uint256.Parse("d6043add63ec364fcb591cf209285d8e60f1cc06186d4dcbce496cdbb4303400");
@@ -3153,7 +3050,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.CreateWallet("test", "mywallet", passphrase: new Mnemonic(Wordlist.English, WordCount.Eighteen).ToString());
 
             // Default of 20 addresses becuause walletaddressbuffer not set
-            HdAccount hdAccount = walletManager.Wallets.Single().AccountsRoot.Single().Accounts.Single();
+            HdAccount hdAccount = walletManager.Wallets.Single().Accounts.Single();
             Assert.Equal(20, hdAccount.ExternalAddresses.Count);
             Assert.Equal(20, hdAccount.InternalAddresses.Count);
 
@@ -3162,7 +3059,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             walletManager.Start();
 
             // Addresses populated to fill the buffer set
-            hdAccount = walletManager.Wallets.Single().AccountsRoot.Single().Accounts.Single();
+            hdAccount = walletManager.Wallets.Single().Accounts.Single();
             Assert.Equal(30, hdAccount.ExternalAddresses.Count);
             Assert.Equal(30, hdAccount.InternalAddresses.Count);
         }
@@ -3182,8 +3079,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             wallet.EncryptedSeed.Should().BeNull();
             wallet.ChainCode.Should().BeNull();
 
-            wallet.AccountsRoot.SelectMany(x => x.Accounts).Single().ExtendedPubKey
-                .Should().Be(stratisAccount0ExtPubKey);
+            wallet.Accounts.Single().ExtendedPubKey.Should().Be(stratisAccount0ExtPubKey);
         }
 
         [Fact]
@@ -3198,7 +3094,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             try
             {
-                wallet.AddNewAccount(CoinType.Stratis, ExtPubKey.Parse(stratisAccount1ExtPubKey), 0, DateTime.Now.AddHours(-2));
+                wallet.AddNewAccount(ExtPubKey.Parse(stratisAccount1ExtPubKey), 0, DateTime.Now.AddHours(-2));
 
                 Assert.True(false, "should have thrown exception but didn't.");
             }
@@ -3217,7 +3113,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             var walletManager = this.CreateWalletManager(dataFolder, KnownNetworks.StratisMain);
             var wallet = walletManager.RecoverWallet("wallet1", ExtPubKey.Parse(stratisAccount0ExtPubKey), 0, DateTime.Now.AddHours(-2));
 
-            var addNewAccount = new Action(() => wallet.AddNewAccount(CoinType.Stratis, ExtPubKey.Parse(stratisAccount0ExtPubKey), 1, DateTime.Now.AddHours(-2)));
+            var addNewAccount = new Action(() => wallet.AddNewAccount(ExtPubKey.Parse(stratisAccount0ExtPubKey), 1, DateTime.Now.AddHours(-2)));
 
             addNewAccount.Should().Throw<WalletException>()
                 .WithMessage("There is already an account in this wallet with this xpubkey: " + stratisAccount0ExtPubKey);
