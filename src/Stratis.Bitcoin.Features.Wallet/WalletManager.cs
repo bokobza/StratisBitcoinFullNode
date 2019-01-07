@@ -186,7 +186,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             foreach (Wallet wallet in wallets)
             {
                 this.Wallets.Add(wallet);
-                foreach (HdAccount account in wallet.GetAccountsByCoinType(this.coinType))
+                foreach (HdAccount account in wallet.GetAccounts())
                 {
                     this.AddAddressesToMaintainBuffer(account, false);
                     this.AddAddressesToMaintainBuffer(account, true);
@@ -243,7 +243,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             // Generate multiple accounts and addresses from the get-go.
             for (int i = 0; i < WalletCreationAccountsCount; i++)
             {
-                HdAccount account = wallet.AddNewAccount(password, this.coinType, this.dateTimeProvider.GetTimeOffset());
+                HdAccount account = wallet.AddNewAccount(password, this.dateTimeProvider.GetTimeOffset());
                 IEnumerable<HdAddress> newReceivingAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer);
                 IEnumerable<HdAddress> newChangeAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer, true);
                 this.UpdateKeysLookupLocked(newReceivingAddresses.Concat(newChangeAddresses));
@@ -330,7 +330,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 HdAccount account;
                 lock (this.lockObject)
                 {
-                    account = wallet.AddNewAccount(password, this.coinType, this.dateTimeProvider.GetTimeOffset());
+                    account = wallet.AddNewAccount(password, this.dateTimeProvider.GetTimeOffset());
                 }
 
                 IEnumerable<HdAddress> newReceivingAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer);
@@ -371,7 +371,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             HdAccount account;
             lock (this.lockObject)
             {
-                account = wallet.AddNewAccount(this.coinType, extPubKey, accountIndex, this.dateTimeProvider.GetTimeOffset());
+                account = wallet.AddNewAccount(extPubKey, accountIndex, this.dateTimeProvider.GetTimeOffset());
             }
 
             IEnumerable<HdAddress> newReceivingAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer);
@@ -425,7 +425,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
             lock (this.lockObject)
             {
-                account = wallet.GetFirstUnusedAccount(this.coinType);
+                account = wallet.GetFirstUnusedAccount();
 
                 if (account != null)
                 {
@@ -434,7 +434,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 }
 
                 // No unused account was found, create a new one.
-                account = wallet.AddNewAccount(password, this.coinType, this.dateTimeProvider.GetTimeOffset());
+                account = wallet.AddNewAccount(password, this.dateTimeProvider.GetTimeOffset());
                 IEnumerable<HdAddress> newReceivingAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer);
                 IEnumerable<HdAddress> newChangeAddresses = account.CreateAddresses(this.network, this.walletSettings.UnusedAddressesBuffer, true);
                 this.UpdateKeysLookupLocked(newReceivingAddresses.Concat(newChangeAddresses));
@@ -456,7 +456,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             lock (this.lockObject)
             {
                 // Get the account.
-                HdAccount account = wallet.GetAccountByCoinType(accountReference.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(accountReference.AccountName);
                 extPubKey = account.ExtendedPubKey;
             }
 
@@ -493,7 +493,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             lock (this.lockObject)
             {
                 // Get the account.
-                HdAccount account = wallet.GetAccountByCoinType(accountReference.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(accountReference.AccountName);
 
                 List<HdAddress> unusedAddresses = isChange ?
                     account.InternalAddresses.Where(acc => !acc.Transactions.Any()).ToList() :
@@ -541,11 +541,11 @@ namespace Stratis.Bitcoin.Features.Wallet
                 var accounts = new List<HdAccount>();
                 if (!string.IsNullOrEmpty(accountName))
                 {
-                    accounts.Add(wallet.GetAccountByCoinType(accountName, this.coinType));
+                    accounts.Add(wallet.GetAccountByName(accountName));
                 }
                 else
                 {
-                    accounts.AddRange(wallet.GetAccountsByCoinType(this.coinType));
+                    accounts.AddRange(wallet.GetAccounts());
                 }
 
                 foreach (HdAccount account in accounts)
@@ -585,11 +585,11 @@ namespace Stratis.Bitcoin.Features.Wallet
                 var accounts = new List<HdAccount>();
                 if (!string.IsNullOrEmpty(accountName))
                 {
-                    accounts.Add(wallet.GetAccountByCoinType(accountName, this.coinType));
+                    accounts.Add(wallet.GetAccountByName(accountName));
                 }
                 else
                 {
-                    accounts.AddRange(wallet.GetAccountsByCoinType(this.coinType));
+                    accounts.AddRange(wallet.GetAccounts());
                 }
 
                 foreach (HdAccount account in accounts)
@@ -625,7 +625,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
                 foreach (Wallet wallet in this.Wallets)
                 {
-                    hdAddress = wallet.GetAllAddressesByCoinType(this.coinType).FirstOrDefault(a => a.Address == address);
+                    hdAddress = wallet.GetAllAddresses().FirstOrDefault(a => a.Address == address);
                     if (hdAddress == null) continue;
 
                     (Money amountConfirmed, Money amountUnconfirmed) result = hdAddress.GetSpendableAmount();
@@ -666,7 +666,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             HdAccount[] res = null;
             lock (this.lockObject)
             {
-                res = wallet.GetAccountsByCoinType(this.coinType).ToArray();
+                res = wallet.GetAccounts().ToArray();
             }
             return res;
         }
@@ -746,7 +746,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             UnspentOutputReference[] res = null;
             lock (this.lockObject)
             {
-                res = wallet.GetAllSpendableTransactions(this.coinType, this.chain.Tip.Height, confirmations, accountFilter).ToArray();
+                res = wallet.GetAllSpendableTransactions(this.chain.Tip.Height, confirmations, accountFilter).ToArray();
             }
             
             return res;
@@ -761,7 +761,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             UnspentOutputReference[] res = null;
             lock (this.lockObject)
             {
-                HdAccount account = wallet.GetAccountByCoinType(walletAccountReference.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(walletAccountReference.AccountName);
 
                 if (account == null)
                 {
@@ -1086,7 +1086,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         {
             foreach (Wallet wallet in this.Wallets)
             {
-                foreach (HdAccount account in wallet.GetAccountsByCoinType(this.coinType, accountFilter ?? Wallet.NormalAccounts))
+                foreach (HdAccount account in wallet.GetAccounts(accountFilter ?? Wallet.NormalAccounts))
                 {
                     bool isChange;
                     if (account.ExternalAddresses.Any(address => address.ScriptPubKey == script))
@@ -1220,7 +1220,8 @@ namespace Stratis.Bitcoin.Features.Wallet
                 ChainCode = chainCode,
                 CreationTime = creationTime ?? this.dateTimeProvider.GetTimeOffset(),
                 Network = this.network,
-                AccountsRoot = new List<AccountRoot> { new AccountRoot() { Accounts = new List<HdAccount>(), CoinType = this.coinType } },
+                Accounts = new List<HdAccount>(),
+                CoinType = this.coinType
             };
 
             // Create a folder if none exists and persist the file.
@@ -1254,7 +1255,8 @@ namespace Stratis.Bitcoin.Features.Wallet
                 IsExtPubKeyWallet = true,
                 CreationTime = creationTime ?? this.dateTimeProvider.GetTimeOffset(),
                 Network = this.network,
-                AccountsRoot = new List<AccountRoot> { new AccountRoot() { Accounts = new List<HdAccount>(), CoinType = this.coinType } },
+                Accounts = new List<HdAccount>(),
+                CoinType = this.coinType
             };
 
             // Create a folder if none exists and persist the file.
@@ -1289,7 +1291,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             {
                 foreach (Wallet wallet in this.Wallets)
                 {
-                    IEnumerable<HdAddress> addresses = wallet.GetAllAddressesByCoinType(this.coinType, a => true);
+                    IEnumerable<HdAddress> addresses = wallet.GetAllAddresses(a => true);
                     foreach (HdAddress address in addresses)
                     {
                         this.scriptToAddressLookup[address.ScriptPubKey] = address;
@@ -1389,7 +1391,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
             lock (this.lockObject)
             {
-                IEnumerable<HdAccount> accounts = wallet.GetAccountsByCoinType(this.coinType);
+                IEnumerable<HdAccount> accounts = wallet.GetAccounts();
                 foreach (HdAccount account in accounts)
                 {
                     foreach (HdAddress address in account.GetCombinedAddresses())
@@ -1436,7 +1438,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
             lock (this.lockObject)
             {
-                IEnumerable<HdAccount> accounts = wallet.GetAccountsByCoinType(this.coinType);
+                IEnumerable<HdAccount> accounts = wallet.GetAccounts();
                 foreach (HdAccount account in accounts)
                 {
                     foreach (HdAddress address in account.GetCombinedAddresses())

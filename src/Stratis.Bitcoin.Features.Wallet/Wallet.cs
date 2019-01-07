@@ -30,7 +30,6 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// </summary>
         public Wallet()
         {
-            this.AccountsRoot = new List<AccountRoot>();
             this.Accounts = new List<HdAccount>();
         }
 
@@ -39,7 +38,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// A wallet with a missing version is considered version 1.
         /// </summary>
         [JsonProperty(PropertyName = "version")]
-        public int Version => VersionNumber;
+        public int Version { get; set; }
 
         /// <summary>
         /// The name of this wallet.
@@ -112,32 +111,32 @@ namespace Stratis.Bitcoin.Features.Wallet
         public ICollection<HdAccount> Accounts { get; set; }
 
         /// <summary>
-        /// The root of the accounts tree.
+        /// Gets the accounts the wallet has, with an optional filter applied.
         /// </summary>
-        [JsonProperty(PropertyName = "accountsRoot")]
-        public ICollection<AccountRoot> AccountsRoot { get; set; }
-
-        /// <summary>
-        /// Gets the accounts the wallet has for this type of coin.
-        /// </summary>
-        /// <param name="coinType">Type of the coin.</param>
         /// <param name="accountFilter">An optional filter for filtering the accounts being returned.</param>
-        /// <returns>The accounts in the wallet corresponding to this type of coin.</returns>
-        public IEnumerable<HdAccount> GetAccountsByCoinType(CoinType coinType, Func<HdAccount, bool> accountFilter = null)
+        /// <returns>The accounts in the wallet.</returns>
+        public IEnumerable<HdAccount> GetAccounts(Func<HdAccount, bool> accountFilter = null)
         {
-            return this.AccountsRoot.Where(a => a.CoinType == coinType).SelectMany(a => a.Accounts).Where(accountFilter ?? NormalAccounts);
+            return this.Accounts.Where(accountFilter ?? NormalAccounts);
         }
 
         /// <summary>
-        /// Gets an account from the wallet's accounts.
+        /// Gets the account matching the name passed as a parameter.
         /// </summary>
-        /// <param name="accountName">The name of the account to retrieve.</param>
-        /// <param name="coinType">The type of the coin this account is for.</param>
-        /// <returns>The requested account.</returns>
-        public HdAccount GetAccountByCoinType(string accountName, CoinType coinType)
+        /// <param name="accountName">The name of the account to get.</param>
+        /// <returns>The HD account specified by the parameter.</returns>
+        /// <exception cref="WalletException">An exception thrown if no account could be found.</exception>
+        public HdAccount GetAccountByName(string accountName)
         {
-            AccountRoot accountRoot = this.AccountsRoot.SingleOrDefault(a => a.CoinType == coinType);
-            return accountRoot?.GetAccountByName(accountName);
+            if (this.Accounts == null)
+                throw new WalletException($"No account with the name '{accountName}' could be found.");
+
+            // Get the requested account.
+            HdAccount account = this.Accounts.SingleOrDefault(a => a.Name == accountName);
+            if (account == null)
+                throw new WalletException($"No account with the name '{accountName}' could be found.");
+
+            return account;
         }
 
         /// <summary>
@@ -153,11 +152,10 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>
         /// Gets all the transactions by coin type.
         /// </summary>
-        /// <param name="coinType">Type of the coin.</param>
         /// <returns></returns>
-        public IEnumerable<TransactionData> GetAllTransactionsByCoinType(CoinType coinType)
+        public IEnumerable<TransactionData> GetAllTransactions()
         {
-            List<HdAccount> accounts = this.GetAccountsByCoinType(coinType).ToList();
+            List<HdAccount> accounts = this.GetAccounts().ToList();
 
             foreach (TransactionData txData in accounts.SelectMany(x => x.ExternalAddresses).SelectMany(x => x.Transactions))
             {
@@ -173,11 +171,10 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>
         /// Gets all the pub keys contained in this wallet.
         /// </summary>
-        /// <param name="coinType">Type of the coin.</param>
         /// <returns></returns>
-        public IEnumerable<Script> GetAllPubKeysByCoinType(CoinType coinType)
+        public IEnumerable<Script> GetAllPubKeys()
         {
-            List<HdAccount> accounts = this.GetAccountsByCoinType(coinType).ToList();
+            List<HdAccount> accounts = this.GetAccounts().ToList();
 
             foreach (Script script in accounts.SelectMany(x => x.ExternalAddresses).Select(x => x.ScriptPubKey))
             {
@@ -193,12 +190,11 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>
         /// Gets all the addresses contained in this wallet.
         /// </summary>
-        /// <param name="coinType">Type of the coin.</param>
         /// <param name="accountFilter">An optional filter for filtering the accounts being returned.</param>
         /// <returns>A list of all the addresses contained in this wallet.</returns>
-        public IEnumerable<HdAddress> GetAllAddressesByCoinType(CoinType coinType, Func<HdAccount, bool> accountFilter = null)
+        public IEnumerable<HdAddress> GetAllAddresses(Func<HdAccount, bool> accountFilter = null)
         {
-            List<HdAccount> accounts = this.GetAccountsByCoinType(coinType, accountFilter).ToList();
+            List<HdAccount> accounts = this.GetAccounts(accountFilter).ToList();
 
             var allAddresses = new List<HdAddress>();
             foreach (HdAccount account in accounts)
@@ -209,66 +205,87 @@ namespace Stratis.Bitcoin.Features.Wallet
         }
 
         /// <summary>
-        /// Adds an account to the current wallet.
+        /// Adds an account to the current account root using encrypted seed and password.
         /// </summary>
-        /// <remarks>
-        /// The name given to the account is of the form "account (i)" by default, where (i) is an incremental index starting at 0.
-        /// According to BIP44, an account at index (i) can only be created when the account at index (i - 1) contains at least one transaction.
-        /// </remarks>
-        /// <seealso cref="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki"/>
-        /// <param name="password">The password used to decrypt the wallet's <see cref="EncryptedSeed"/>.</param>
-        /// <param name="coinType">The type of coin this account is for.</param>
+        /// <remarks>The name given to the account is of the form "account (i)" by default, where (i) is an incremental index starting at 0.
+        /// According to BIP44, an account at index (i) can only be created when the account at index (i - 1) contains transactions.
+        /// <seealso cref="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki"/></remarks>
+        /// <param name="password">The password used to decrypt the wallet's encrypted seed.</param>
         /// <param name="accountCreationTime">Creation time of the account to be created.</param>
         /// <param name="accountIndex">The index at which an account will be created. If left null, a new account will be created after the last used one.</param>
-        /// <param name="accountName">The name of the account to be created. If left null, an account will be created according to the <see cref="Wallet.AccountNamePattern"/>.</param>
+        /// <param name="accountName">The name of the account to be created. If left null, an account will be created according to the <see cref="AccountNamePattern"/>.</param>
         /// <returns>A new HD account.</returns>
-        public HdAccount AddNewAccount(string password, CoinType coinType, DateTimeOffset accountCreationTime, int? accountIndex = null, string accountName = null)
+        public HdAccount AddNewAccount(string password, DateTimeOffset accountCreationTime, int? accountIndex = null, string accountName = null)
         {
             Guard.NotEmpty(password, nameof(password));
 
-            AccountRoot accountRoot = this.AccountsRoot.Single(a => a.CoinType == coinType);
-            return accountRoot.AddNewAccount(password, this.EncryptedSeed, this.ChainCode, this.Network, accountCreationTime, accountIndex, accountName);
-        }
+            ICollection<HdAccount> hdAccounts = this.Accounts;
 
-        /// <summary>
-        /// Adds an account to the current wallet.
-        /// </summary>
-        /// <remarks>
-        /// The name given to the account is of the form "account (i)" by default, where (i) is an incremental index starting at 0.
-        /// According to BIP44, an account at index (i) can only be created when the account at index (i - 1) contains at least one transaction.
-        /// </remarks>
-        /// <seealso cref="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki"/>
-        /// <param name="coinType">The type of coin this account is for.</param>
-        /// <param name="extPubKey">The extended public key for the wallet<see cref="EncryptedSeed"/>.</param>
-        /// <param name="accountIndex">Zero-based index of the account to add.</param>
-        /// <param name="accountCreationTime">Creation time of the account to be created.</param>
-        /// <returns>A new HD account.</returns>
-        public HdAccount AddNewAccount(CoinType coinType, ExtPubKey extPubKey, int accountIndex, DateTimeOffset accountCreationTime)
-        {
-            AccountRoot accountRoot = this.AccountsRoot.Single(a => a.CoinType == coinType);
-            return accountRoot.AddNewAccount(extPubKey, accountIndex, this.Network, accountCreationTime);
-        }
-
-        /// <summary>
-        /// Gets the first account that contains no transaction.
-        /// </summary>
-        /// <returns>An unused account.</returns>
-        public HdAccount GetFirstUnusedAccount(CoinType coinType)
-        {
-            // Get the accounts root for this type of coin.
-            AccountRoot accountsRoot = this.AccountsRoot.Single(a => a.CoinType == coinType);
-
-            if (accountsRoot.Accounts.Any())
+            // If an account needs to be created at a specific index or with a specific name, make sure it doesn't already exist.
+            if (hdAccounts.Any(a => a.Index == accountIndex || a.Name == accountName))
             {
-                // Get an unused account.
-                HdAccount firstUnusedAccount = accountsRoot.GetFirstUnusedAccount();
-                if (firstUnusedAccount != null)
+                throw new WalletException($"An account at index {accountIndex} or with name {accountName} already exists.");
+            }
+
+            if (accountIndex == null)
+            {
+                if (hdAccounts.Any())
                 {
-                    return firstUnusedAccount;
+                    // Hide account indexes used for cold staking from the "Max" calculation.
+                    accountIndex = hdAccounts.Where(Wallet.NormalAccounts).Max(a => a.Index) + 1;
+                }
+                else
+                {
+                    accountIndex = 0;
                 }
             }
 
-            return null;
+            HdAccount newAccount = this.CreateAccount(password, this.EncryptedSeed, this.ChainCode, this.Network, accountCreationTime, accountIndex.Value, accountName);
+
+            hdAccounts.Add(newAccount);
+            this.Accounts = hdAccounts;
+
+            return newAccount;
+        }
+
+        /// <summary>
+        /// Adds an account to the current account root using extended public key and account index.
+        /// </summary>
+        /// <param name="accountExtPubKey">The extended public key for the account.</param>
+        /// <param name="accountIndex">The zero-based account index.</param>
+        /// <param name="accountCreationTime">Creation time of the account to be created.</param>
+        /// <returns>A new HD account.</returns>
+        public HdAccount AddNewAccount(ExtPubKey accountExtPubKey, int accountIndex, DateTimeOffset accountCreationTime)
+        {
+            ICollection<HdAccount> hdAccounts = this.Accounts.ToList();
+
+            if (hdAccounts.Any(a => a.Index == accountIndex))
+            {
+                throw new WalletException("There is already an account in this wallet with index: " + accountIndex);
+            }
+
+            if (hdAccounts.Any(x => x.ExtendedPubKey == accountExtPubKey.ToString(this.Network)))
+            {
+                throw new WalletException("There is already an account in this wallet with this xpubkey: " + accountExtPubKey.ToString(this.Network));
+            }
+
+            string accountHdPath = HdOperations.GetAccountHdPath((int)this.CoinType, accountIndex);
+
+            var newAccount = new HdAccount
+            {
+                Index = accountIndex,
+                ExtendedPubKey = accountExtPubKey.ToString(this.Network),
+                ExternalAddresses = new List<HdAddress>(),
+                InternalAddresses = new List<HdAddress>(),
+                Name = $"account {accountIndex}",
+                HdPath = accountHdPath,
+                CreationTime = accountCreationTime
+            };
+
+            hdAccounts.Add(newAccount);
+            this.Accounts = hdAccounts;
+
+            return newAccount;
         }
 
         /// <summary>
@@ -278,9 +295,9 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <returns>A value indicating whether the wallet contains the specified address.</returns>
         public bool ContainsAddress(HdAddress address)
         {
-            if (!this.AccountsRoot.Any(r => r.Accounts.Any(
+            if (!this.Accounts.Any(
                 a => a.ExternalAddresses.Any(i => i.Address == address.Address) ||
-                     a.InternalAddresses.Any(i => i.Address == address.Address))))
+                     a.InternalAddresses.Any(i => i.Address == address.Address)))
             {
                 return false;
             }
@@ -313,43 +330,16 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>
         /// Lists all spendable transactions from all accounts in the wallet.
         /// </summary>
-        /// <param name="coinType">Type of the coin to get transactions from.</param>
         /// <param name="currentChainHeight">Height of the current chain, used in calculating the number of confirmations.</param>
         /// <param name="confirmations">The number of confirmations required to consider a transaction spendable.</param>
         /// <param name="accountFilter">An optional filter for filtering the accounts being returned.</param>
         /// <returns>A collection of spendable outputs.</returns>
-        public IEnumerable<UnspentOutputReference> GetAllSpendableTransactions(CoinType coinType, int currentChainHeight, int confirmations = 0, Func<HdAccount, bool> accountFilter = null)
+        public IEnumerable<UnspentOutputReference> GetAllSpendableTransactions(int currentChainHeight, int confirmations = 0, Func<HdAccount, bool> accountFilter = null)
         {
-            IEnumerable<HdAccount> accounts = this.GetAccountsByCoinType(coinType, accountFilter);
+            IEnumerable<HdAccount> accounts = this.GetAccounts(accountFilter);
 
             return accounts.SelectMany(x => x.GetSpendableTransactions(currentChainHeight, this.Network, confirmations));
         }
-    }
-
-    /// <summary>
-    /// The root for the accounts for any type of coins.
-    /// </summary>
-    public class AccountRoot
-    {
-        /// <summary>
-        /// Initializes a new instance of the object.
-        /// </summary>
-        public AccountRoot()
-        {
-            this.Accounts = new List<HdAccount>();
-        }
-
-        /// <summary>
-        /// The type of coin, Bitcoin or Stratis.
-        /// </summary>
-        [JsonProperty(PropertyName = "coinType")]
-        public CoinType CoinType { get; set; }
-
-        /// <summary>
-        /// The accounts used in the wallet.
-        /// </summary>
-        [JsonProperty(PropertyName = "accounts")]
-        public ICollection<HdAccount> Accounts { get; set; }
 
         /// <summary>
         /// Gets the first account that contains no transaction.
@@ -367,74 +357,6 @@ namespace Stratis.Bitcoin.Features.Wallet
             // gets the unused account with the lowest index
             int index = unusedAccounts.Min(a => a.Index);
             return unusedAccounts.Single(a => a.Index == index);
-        }
-
-        /// <summary>
-        /// Gets the account matching the name passed as a parameter.
-        /// </summary>
-        /// <param name="accountName">The name of the account to get.</param>
-        /// <returns>The HD account specified by the parameter.</returns>
-        /// <exception cref="WalletException">An exception thrown if no account could be found.</exception>
-        public HdAccount GetAccountByName(string accountName)
-        {
-            if (this.Accounts == null)
-                throw new WalletException($"No account with the name '{accountName}' could be found.");
-
-            // Get the requested account.
-            HdAccount account = this.Accounts.SingleOrDefault(a => a.Name == accountName);
-            if (account == null)
-                throw new WalletException($"No account with the name '{accountName}' could be found.");
-
-            return account;
-        }
-
-        /// <summary>
-        /// Adds an account to the current account root using encrypted seed and password.
-        /// </summary>
-        /// <remarks>The name given to the account is of the form "account (i)" by default, where (i) is an incremental index starting at 0.
-        /// According to BIP44, an account at index (i) can only be created when the account at index (i - 1) contains transactions.
-        /// <seealso cref="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki"/></remarks>
-        /// <param name="password">The password used to decrypt the wallet's encrypted seed.</param>
-        /// <param name="encryptedSeed">The encrypted private key for this wallet.</param>
-        /// <param name="chainCode">The chain code for this wallet.</param>
-        /// <param name="network">The network for which this account will be created.</param>
-        /// <param name="accountCreationTime">Creation time of the account to be created.</param>
-        /// <param name="accountIndex">The index at which an account will be created. If left null, a new account will be created after the last used one.</param>
-        /// <param name="accountName">The name of the account to be created. If left null, an account will be created according to the <see cref="AccountNamePattern"/>.</param>
-        /// <returns>A new HD account.</returns>
-        public HdAccount AddNewAccount(string password, string encryptedSeed, byte[] chainCode, Network network, DateTimeOffset accountCreationTime, int? accountIndex = null, string accountName = null)
-        {
-            Guard.NotEmpty(password, nameof(password));
-            Guard.NotEmpty(encryptedSeed, nameof(encryptedSeed));
-            Guard.NotNull(chainCode, nameof(chainCode));
-
-            ICollection<HdAccount> hdAccounts = this.Accounts;
-
-            // If an account needs to be created at a specific index or with a specific name, make sure it doesn't already exist.
-            if (hdAccounts.Any(a => a.Index == accountIndex || a.Name == accountName))
-            {
-                throw new WalletException($"An account at index {accountIndex} or with name {accountName} already exists.");
-            }
-
-            if (accountIndex == null)
-            {
-                if (hdAccounts.Any())
-                {
-                    // Hide account indexes used for cold staking from the "Max" calculation.
-                    accountIndex = hdAccounts.Where(Wallet.NormalAccounts).Max(a => a.Index) + 1;
-                }
-                else
-                {
-                    accountIndex = 0;
-                }
-            }
-
-            HdAccount newAccount = this.CreateAccount(password, encryptedSeed, chainCode, network, accountCreationTime, accountIndex.Value, accountName);
-
-            hdAccounts.Add(newAccount);
-            this.Accounts = hdAccounts;
-
-            return newAccount;
         }
 
         /// <summary>
@@ -472,46 +394,6 @@ namespace Stratis.Bitcoin.Features.Wallet
                 HdPath = accountHdPath,
                 CreationTime = accountCreationTime
             };
-        }
-
-        /// <inheritdoc cref="AddNewAccount(string, string, byte[], Network, DateTimeOffset)"/>
-        /// <summary>
-        /// Adds an account to the current account root using extended public key and account index.
-        /// </summary>
-        /// <param name="accountExtPubKey">The extended public key for the account.</param>
-        /// <param name="accountIndex">The zero-based account index.</param>
-        public HdAccount AddNewAccount(ExtPubKey accountExtPubKey, int accountIndex, Network network, DateTimeOffset accountCreationTime)
-        {
-            ICollection<HdAccount> hdAccounts = this.Accounts.ToList();
-
-            if (hdAccounts.Any(a => a.Index == accountIndex))
-            {
-                throw new WalletException("There is already an account in this wallet with index: " + accountIndex);
-            }
-
-            if (hdAccounts.Any(x => x.ExtendedPubKey == accountExtPubKey.ToString(network)))
-            {
-                throw new WalletException("There is already an account in this wallet with this xpubkey: " +
-                                            accountExtPubKey.ToString(network));
-            }
-
-            string accountHdPath = HdOperations.GetAccountHdPath((int) this.CoinType, accountIndex);
-
-            var newAccount = new HdAccount
-            {
-                Index = accountIndex,
-                ExtendedPubKey = accountExtPubKey.ToString(network),
-                ExternalAddresses = new List<HdAddress>(),
-                InternalAddresses = new List<HdAddress>(),
-                Name = $"account {accountIndex}",
-                HdPath = accountHdPath,
-                CreationTime = accountCreationTime
-            };
-
-            hdAccounts.Add(newAccount);
-            this.Accounts = hdAccounts;
-
-            return newAccount;
         }
     }
 

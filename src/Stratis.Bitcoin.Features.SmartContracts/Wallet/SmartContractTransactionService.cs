@@ -79,7 +79,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Wallet
             if (!string.IsNullOrWhiteSpace(request.Sender))
             {
                 Features.Wallet.Wallet wallet = this.walletManager.GetWallet(request.WalletName);
-                HdAccount account = wallet.GetAccountByCoinType(request.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(request.AccountName);
                 senderAddress = account.GetCombinedAddresses().FirstOrDefault(x => x.Address == request.Sender);
             }
 
@@ -137,7 +137,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Wallet
             if (!string.IsNullOrWhiteSpace(request.Sender))
             {
                 Features.Wallet.Wallet wallet = this.walletManager.GetWallet(request.WalletName);
-                HdAccount account = wallet.GetAccountByCoinType(request.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(request.AccountName);
                 senderAddress = account.GetCombinedAddresses().FirstOrDefault(x => x.Address == request.Sender);
             }
 

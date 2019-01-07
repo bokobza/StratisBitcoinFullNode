@@ -1015,7 +1015,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
             try
             {
                 Wallet wallet = this.walletManager.GetWallet(request.WalletName);
-                HdAccount account = wallet.GetAccountByCoinType(request.AccountName, this.coinType);
+                HdAccount account = wallet.GetAccountByName(request.AccountName);
 
                 var model = new AddressesModel
                 {

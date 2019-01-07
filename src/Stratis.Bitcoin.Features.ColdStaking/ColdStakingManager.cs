@@ -177,7 +177,7 @@ namespace Stratis.Bitcoin.Features.ColdStaking
             HdAccount account = null;
             try
             {
-                account = wallet.GetAccountByCoinType(isColdWalletAccount ? ColdWalletAccountName : HotWalletAccountName, coinType);
+                account = wallet.GetAccountByName(isColdWalletAccount ? ColdWalletAccountName : HotWalletAccountName);
             }
             catch (Exception) { }
 
@@ -236,7 +236,7 @@ namespace Stratis.Bitcoin.Features.ColdStaking
                 accountName = HotWalletAccountName;
             }
 
-            account = wallet.AddNewAccount(walletPassword, this.coinType, this.dateTimeProvider.GetTimeOffset(), accountIndex, accountName);
+            account = wallet.AddNewAccount(walletPassword, this.dateTimeProvider.GetTimeOffset(), accountIndex, accountName);
 
             // Maintain at least one unused address at all times. This will ensure that wallet recovery will also work.
             account.CreateAddresses(wallet.Network, 1, false);
@@ -504,7 +504,7 @@ namespace Stratis.Bitcoin.Features.ColdStaking
             UnspentOutputReference[] res = null;
             lock (this.lockObject)
             {
-                res = wallet.GetAllSpendableTransactions(this.coinType, this.chain.Tip.Height, confirmations,
+                res = wallet.GetAllSpendableTransactions(this.chain.Tip.Height, confirmations,
                     a => a.Index == (isColdWalletAccount ? ColdWalletAccountIndex : HotWalletAccountIndex)).ToArray();
             }
 
