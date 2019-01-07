@@ -50,7 +50,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common
         public static HdAddress GetUnusedAddress(this WalletManager walletManager)
         {
             var wallet = walletManager.Wallets.First();
-            var walletAccount = wallet.AccountsRoot.First().Accounts.First();
+            var walletAccount = wallet.Accounts.First();
             var walletAccountReference = new WalletAccountReference(wallet.Name, walletAccount.Name);
             return walletManager.GetUnusedAddress(walletAccountReference);
         }

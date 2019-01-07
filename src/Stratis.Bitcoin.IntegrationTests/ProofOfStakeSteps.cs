@@ -105,8 +105,7 @@ namespace Stratis.Bitcoin.IntegrationTests
             this.transactionsBeforeStaking.Clear();
             foreach (TransactionData transactionData in this.PremineNodeWithCoins.FullNode.WalletManager().Wallets
                 .First()
-                .GetAllTransactionsByCoinType((CoinType)this.PremineNodeWithCoins.FullNode.Network.Consensus
-                    .CoinType))
+                .GetAllTransactions())
             {
                 this.transactionsBeforeStaking.Add(transactionData.Id);
             }
@@ -124,8 +123,7 @@ namespace Stratis.Bitcoin.IntegrationTests
             {
                 foreach (TransactionData transactionData in this.PremineNodeWithCoins.FullNode.WalletManager().Wallets
                     .First()
-                    .GetAllTransactionsByCoinType((CoinType)this.PremineNodeWithCoins.FullNode.Network.Consensus
-                        .CoinType))
+                    .GetAllTransactions())
                 {
                     if (!this.transactionsBeforeStaking.Contains(transactionData.Id) && (transactionData.IsCoinStake ?? false))
                     {
@@ -140,8 +138,7 @@ namespace Stratis.Bitcoin.IntegrationTests
         public void PosRewardForAllCoinstakeTransactionsIsCorrect()
         {
             // build a dictionary of coinstake tx's indexed by tx id.
-            foreach (var tx in this.PremineNodeWithCoins.FullNode.WalletManager().Wallets.First().GetAllTransactionsByCoinType((CoinType)
-                this.PremineNodeWithCoins.FullNode.Network.Consensus.CoinType))
+            foreach (var tx in this.PremineNodeWithCoins.FullNode.WalletManager().Wallets.First().GetAllTransactions())
             {
                 this.txLookup[tx.Id] = tx;
             }
@@ -150,8 +147,7 @@ namespace Stratis.Bitcoin.IntegrationTests
             {
                 foreach (TransactionData transactionData in this.PremineNodeWithCoins.FullNode.WalletManager().Wallets
                     .First()
-                    .GetAllTransactionsByCoinType((CoinType)this.PremineNodeWithCoins.FullNode.Network.Consensus
-                        .CoinType))
+                    .GetAllTransactions())
                 {
                     if (!this.transactionsBeforeStaking.Contains(transactionData.Id) && (transactionData.IsCoinStake ?? false))
                     {
