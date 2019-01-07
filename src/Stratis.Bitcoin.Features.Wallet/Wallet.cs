@@ -30,6 +30,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// </summary>
         public Wallet()
         {
+            this.Version = VersionNumber;
             this.Accounts = new List<HdAccount>();
         }
 
@@ -37,7 +38,7 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// The version of this wallet.
         /// A wallet with a missing version is considered version 1.
         /// </summary>
-        [JsonProperty(PropertyName = "version")]
+        [JsonProperty(PropertyName = "version", NullValueHandling = NullValueHandling.Ignore)]
         public int Version { get; set; }
 
         /// <summary>
