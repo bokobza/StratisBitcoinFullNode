@@ -15,11 +15,15 @@ namespace Stratis.Bitcoin.Utilities
         /// <summary> Gets the folder path. </summary>
         public string FolderPath { get; }
 
+        /// <summary> A <see cref="JsonSerializerSettings"/> that can be used for seralization/deserialization. </summary>
+        private readonly JsonSerializerSettings jsonSettings;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStorage{T}"/> class.
         /// </summary>
         /// <param name="folderPath">The path of the folder in which the files are to be stored.</param>
-        public FileStorage(string folderPath)
+        /// <param name="jsonSettings">An optional <see cref="JsonSerializerSettings"/> that can be used for seralization/deserialization.</param>
+        public FileStorage(string folderPath, JsonSerializerSettings jsonSettings = null)
         {
             Guard.NotEmpty(folderPath, nameof(folderPath));
 
@@ -27,6 +31,18 @@ namespace Stratis.Bitcoin.Utilities
 
             // Create a folder if none exists.
             Directory.CreateDirectory(folderPath);
+
+            if (jsonSettings == null)
+            {
+                this.jsonSettings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented
+                };
+            }
+            else
+            {
+                this.jsonSettings = jsonSettings;
+            }
         }
 
         /// <summary>
@@ -45,7 +61,7 @@ namespace Stratis.Bitcoin.Utilities
             string newFilePath = $"{filePath}.{uniqueId}.new";
             string tempFilePath = $"{filePath}.{uniqueId}.temp";
 
-            File.WriteAllText(newFilePath, JsonConvert.SerializeObject(toSave, Formatting.Indented));
+            File.WriteAllText(newFilePath, JsonConvert.SerializeObject(toSave, this.jsonSettings));
 
             // If the file does not exist yet, create it.
             if (!File.Exists(filePath))
@@ -132,7 +148,7 @@ namespace Stratis.Bitcoin.Utilities
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"No wallet file found at {filePath}");
 
-            return JsonConvert.DeserializeObject<T>(File.ReadAllText(filePath));
+            return JsonConvert.DeserializeObject<T>(File.ReadAllText(filePath), this.jsonSettings);
         }
 
         /// <summary>
