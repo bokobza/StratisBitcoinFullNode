@@ -123,7 +123,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             this.chain = chain;
             this.asyncLoopFactory = asyncLoopFactory;
             this.nodeLifetime = nodeLifetime;
-            this.fileStorage = new FileStorage<Wallet>(dataFolder.WalletPath);
+            this.fileStorage = new FileStorage<Wallet>(dataFolder.WalletPath, new WalletConverter());
             this.broadcasterManager = broadcasterManager;
             this.scriptAddressReader = scriptAddressReader;
             this.dateTimeProvider = dateTimeProvider;

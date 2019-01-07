@@ -15,16 +15,18 @@ namespace Stratis.Bitcoin.Utilities
         /// <summary> Gets the folder path. </summary>
         public string FolderPath { get; }
 
+        public JsonConverter JsonConverter { get; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FileStorage{T}"/> class.
         /// </summary>
         /// <param name="folderPath">The path of the folder in which the files are to be stored.</param>
-        public FileStorage(string folderPath)
+        public FileStorage(string folderPath, JsonConverter jsonConverter = null)
         {
             Guard.NotEmpty(folderPath, nameof(folderPath));
 
             this.FolderPath = folderPath;
-
+            this.JsonConverter = jsonConverter;
             // Create a folder if none exists.
             Directory.CreateDirectory(folderPath);
         }
@@ -45,7 +47,14 @@ namespace Stratis.Bitcoin.Utilities
             string newFilePath = $"{filePath}.{uniqueId}.new";
             string tempFilePath = $"{filePath}.{uniqueId}.temp";
 
-            File.WriteAllText(newFilePath, JsonConvert.SerializeObject(toSave, Formatting.Indented));
+            if (this.JsonConverter != null)
+            {
+                File.WriteAllText(newFilePath, JsonConvert.SerializeObject(toSave, Formatting.Indented, this.JsonConverter));
+            }
+            else
+            {
+                File.WriteAllText(newFilePath, JsonConvert.SerializeObject(toSave, Formatting.Indented));
+            }
 
             // If the file does not exist yet, create it.
             if (!File.Exists(filePath))
@@ -132,7 +141,14 @@ namespace Stratis.Bitcoin.Utilities
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"No wallet file found at {filePath}");
 
-            return JsonConvert.DeserializeObject<T>(File.ReadAllText(filePath));
+            if (this.JsonConverter != null)
+            {
+                return JsonConvert.DeserializeObject<T>(File.ReadAllText(filePath), this.JsonConverter);
+            }
+            else
+            {
+                return JsonConvert.DeserializeObject<T>(File.ReadAllText(filePath));
+            }
         }
 
         /// <summary>

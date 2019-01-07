@@ -77,6 +77,31 @@ namespace Stratis.Bitcoin.Features.Wallet
         public DateTimeOffset CreationTime { get; set; }
 
         /// <summary>
+        /// The type of coin, Bitcoin or Stratis.
+        /// </summary>
+        [JsonProperty(PropertyName = "coinType")]
+        public CoinType CoinType { get; set; }
+
+        /// <summary>
+        /// The height of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHeight", NullValueHandling = NullValueHandling.Ignore)]
+        public int? LastBlockSyncedHeight { get; set; }
+
+        /// <summary>
+        /// The hash of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHash", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(UInt256JsonConverter))]
+        public uint256 LastBlockSyncedHash { get; set; }
+
+        /// <summary>
+        /// The accounts used in the wallet.
+        /// </summary>
+        [JsonProperty(PropertyName = "accounts")]
+        public ICollection<HdAccount> Accounts { get; set; }
+
+        /// <summary>
         /// The root of the accounts tree.
         /// </summary>
         [JsonProperty(PropertyName = "accountsRoot")]
