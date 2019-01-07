@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.BuilderExtensions;
+using Newtonsoft.Json;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Wallet.Broadcasting;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
@@ -123,7 +124,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             this.chain = chain;
             this.asyncLoopFactory = asyncLoopFactory;
             this.nodeLifetime = nodeLifetime;
-            this.fileStorage = new FileStorage<Wallet>(dataFolder.WalletPath);
+            this.fileStorage = new FileStorage<Wallet>(dataFolder.WalletPath, new JsonSerializerSettings { Formatting = Formatting.Indented, Converters = { new WalletConverter() }});
             this.broadcasterManager = broadcasterManager;
             this.scriptAddressReader = scriptAddressReader;
             this.dateTimeProvider = dateTimeProvider;

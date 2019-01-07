@@ -20,6 +20,8 @@ namespace Stratis.Bitcoin.Features.Wallet
         /// <summary>Account numbers greater or equal to this number are reserved for special purpose account indexes.</summary>
         public const int SpecialPurposeAccountIndexesStart = 100_000_000;
 
+        public const int VersionNumber = 2;
+
         /// <summary>Filter for identifying normal wallet accounts.</summary>
         public static Func<HdAccount, bool> NormalAccounts = a => a.Index < SpecialPurposeAccountIndexesStart;
 
@@ -29,7 +31,15 @@ namespace Stratis.Bitcoin.Features.Wallet
         public Wallet()
         {
             this.AccountsRoot = new List<AccountRoot>();
+            this.Accounts = new List<HdAccount>();
         }
+
+        /// <summary>
+        /// The version of this wallet.
+        /// A wallet with a missing version is considered version 1.
+        /// </summary>
+        [JsonProperty(PropertyName = "version")]
+        public int Version => VersionNumber;
 
         /// <summary>
         /// The name of this wallet.
@@ -75,6 +85,31 @@ namespace Stratis.Bitcoin.Features.Wallet
         [JsonProperty(PropertyName = "creationTime")]
         [JsonConverter(typeof(DateTimeOffsetConverter))]
         public DateTimeOffset CreationTime { get; set; }
+
+        /// <summary>
+        /// The type of coin, Bitcoin or Stratis.
+        /// </summary>
+        [JsonProperty(PropertyName = "coinType")]
+        public CoinType CoinType { get; set; }
+
+        /// <summary>
+        /// The height of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHeight", NullValueHandling = NullValueHandling.Ignore)]
+        public int? LastBlockSyncedHeight { get; set; }
+
+        /// <summary>
+        /// The hash of the last block that was synced.
+        /// </summary>
+        [JsonProperty(PropertyName = "lastBlockSyncedHash", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(UInt256JsonConverter))]
+        public uint256 LastBlockSyncedHash { get; set; }
+
+        /// <summary>
+        /// The accounts used in the wallet.
+        /// </summary>
+        [JsonProperty(PropertyName = "accounts")]
+        public ICollection<HdAccount> Accounts { get; set; }
 
         /// <summary>
         /// The root of the accounts tree.
