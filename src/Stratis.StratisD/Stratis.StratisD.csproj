@@ -40,4 +40,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="git rev-parse HEAD &gt; $(TargetDir)//commit.log" />
+  </Target>
+
 </Project>
