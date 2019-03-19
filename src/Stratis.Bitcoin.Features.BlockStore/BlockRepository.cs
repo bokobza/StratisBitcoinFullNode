@@ -477,8 +477,10 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 var transactions = new List<(Transaction, Block)>();
 
                 foreach (Block block in blocks)
+                {
                     foreach (Transaction transaction in block.Transactions)
                         transactions.Add((transaction, block));
+                }
 
                 this.OnDeleteTransactions(dbreezeTransaction, transactions);
             }

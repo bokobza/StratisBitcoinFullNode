@@ -48,21 +48,16 @@ namespace Stratis.Bitcoin.Features.BlockStore
         /// <summary>The highest stored block in the repository.</summary>
         private ChainedHeader storeTip;
 
-        /// <inheritdoc cref="ILogger"/>
         private readonly ILogger logger;
 
         private readonly IBlockStoreQueueFlushCondition blockStoreQueueFlushCondition;
 
-        /// <inheritdoc cref="IChainState"/>
         private readonly IChainState chainState;
 
-        /// <inheritdoc cref="StoreSettings"/>
         private readonly StoreSettings storeSettings;
 
-        /// <inheritdoc cref="ConcurrentChain"/>
         private readonly ConcurrentChain chain;
 
-        /// <inheritdoc cref="IBlockRepository"/>
         private readonly IBlockRepository blockRepository;
 
         /// <summary>Queue which contains blocks that should be saved to the database.</summary>
@@ -241,7 +236,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             Block block = await this.blockRepository.GetBlockAsync(blockHash).ConfigureAwait(false);
 
-            this.logger.LogTrace("Block '{0}' was{1} found in the repository.", blockHash, (block == null) ? " not" : "");
+            this.logger.LogTrace("Block '{0}' was{1} found in the repository.", blockHash, (block == null) ? " not" : string.Empty);
 
             return block;
         }
@@ -291,7 +286,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             this.SetStoreTip(newTip);
 
-            //TODO this thing should remove stuff from chain database. Otherwise we are leaving redundant data.
+            // TODO this thing should remove stuff from chain database. Otherwise we are leaving redundant data.
             this.chain.SetTip(newTip); // we have to set chain store to be same as the store tip.
 
             this.logger.LogWarning("Block store tip recovered to block '{0}'.", newTip);

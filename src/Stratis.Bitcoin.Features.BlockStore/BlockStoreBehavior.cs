@@ -296,7 +296,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 {
                     this.logger.LogTrace("Sending block '{0}' to peer '{1}'.", chainedHeaderBlock.ChainedHeader, peer.RemoteSocketEndpoint);
 
-                    //TODO strip block of witness if node does not support
+                    // TODO strip block of witness if node does not support
                     await peer.SendMessageAsync(new BlockPayload(chainedHeaderBlock.Block.WithOptions(this.chain.Network.Consensus.ConsensusFactory, peer.SupportedTransactionOptions))).ConfigureAwait(false);
                 }
                 else
@@ -364,7 +364,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             bool revertToInv = ((!this.PreferHeaders && (!this.preferHeaderAndIDs || blocksToAnnounce.Count > 1)) || blocksToAnnounce.Count > MaxBlocksToAnnounce);
 
-            this.logger.LogTrace("Block propagation preferences of the peer '{0}': prefer headers - {1}, prefer headers and IDs - {2}, will{3} revert to 'inv' now.", peer.RemoteSocketEndpoint, this.PreferHeaders, this.preferHeaderAndIDs, revertToInv ? "" : " NOT");
+            this.logger.LogTrace("Block propagation preferences of the peer '{0}': prefer headers - {1}, prefer headers and IDs - {2}, will{3} revert to 'inv' now.", peer.RemoteSocketEndpoint, this.PreferHeaders, this.preferHeaderAndIDs, revertToInv ? string.Empty : " NOT");
 
             var headers = new List<BlockHeader>();
             var inventoryBlockToSend = new List<ChainedHeader>();

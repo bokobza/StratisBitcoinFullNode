@@ -14,7 +14,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
         private readonly IBlockRepository blockRepository;
         private readonly DBreezeSerializer dBreezeSerializer;
         private readonly ILogger logger;
-        private static readonly byte[] prunedTipKey = new byte[2];
+        private static readonly byte[] PrunedTipKey = new byte[2];
         private readonly StoreSettings storeSettings;
 
         /// <inheritdoc />
@@ -55,14 +55,14 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
 
                 using (DBreeze.Transactions.Transaction transaction = this.blockRepository.DBreeze.GetTransaction())
                 {
-                    transaction.Insert(BlockRepository.CommonTableName, prunedTipKey, this.dBreezeSerializer.Serialize(this.PrunedTip));
+                    transaction.Insert(BlockRepository.CommonTableName, PrunedTipKey, this.dBreezeSerializer.Serialize(this.PrunedTip));
                     transaction.Commit();
                 }
             }
 
             if (nodeInitializing)
             {
-                if (IsDatabasePruned())
+                if (this.IsDatabasePruned())
                     return;
 
                 await this.PrepareDatabaseForCompactingAsync(blockRepositoryTip).ConfigureAwait(false);
@@ -121,7 +121,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
             {
                 dbreezeTransaction.ValuesLazyLoadingIsOn = false;
 
-                Row<byte[], byte[]> row = dbreezeTransaction.Select<byte[], byte[]>(BlockRepository.CommonTableName, prunedTipKey);
+                Row<byte[], byte[]> row = dbreezeTransaction.Select<byte[], byte[]>(BlockRepository.CommonTableName, PrunedTipKey);
                 if (row.Exists)
                     this.PrunedTip = this.dBreezeSerializer.Deserialize<HashHeightPair>(row.Value);
 
@@ -158,7 +158,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
                         }
 
                         // Save the hash and height of where the node was pruned up to.
-                        dbreezeTransaction.Insert(BlockRepository.CommonTableName, prunedTipKey, this.dBreezeSerializer.Serialize(this.PrunedTip));
+                        dbreezeTransaction.Insert(BlockRepository.CommonTableName, PrunedTipKey, this.dBreezeSerializer.Serialize(this.PrunedTip));
                     }
 
                     dbreezeTransaction.Commit();

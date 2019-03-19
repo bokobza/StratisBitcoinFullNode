@@ -7,7 +7,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
     /// <summary>
     /// This service starts an async loop task that periodically deletes from the blockstore.
     /// <para>
-    /// If the height of the node's block store is more than <see cref="PruneBlockStoreService.MaxBlocksToKeep"/>, the node will 
+    /// If the height of the node's block store is more than <see cref="PruneBlockStoreService.MaxBlocksToKeep"/>, the node will
     /// be pruned, leaving a margin of <see cref="PruneBlockStoreService.MaxBlocksToKeep"/> in the block database.
     /// </para>
     /// <para>

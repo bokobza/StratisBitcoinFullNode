@@ -16,6 +16,7 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <Version>3.0.4.0-beta</Version>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <CodeAnalysisRuleSet>..\Stratis.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DBreeze" Version="1.89.0" />

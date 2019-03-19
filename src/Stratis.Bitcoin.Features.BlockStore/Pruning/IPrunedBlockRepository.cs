@@ -28,7 +28,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
         /// <param name="nodeInitializing">Indicates whether or not this method is called from node startup or not.</param>
         Task PruneAndCompactDatabase(ChainedHeader blockStoreTip, Network network, bool nodeInitializing);
 
-        /// <summary> 
+        /// <summary>
         /// The lowest block hash and height that the repository has.
         /// <para>
         /// This also indicated where the node has been pruned up to.
@@ -38,7 +38,7 @@ namespace Stratis.Bitcoin.Features.BlockStore.Pruning
 
         /// <summary>
         /// Sets the pruned tip.
-        /// <para> 
+        /// <para>
         /// It will be saved once the block database has been compacted on node initialization or shutdown.
         /// </para>
         /// </summary>

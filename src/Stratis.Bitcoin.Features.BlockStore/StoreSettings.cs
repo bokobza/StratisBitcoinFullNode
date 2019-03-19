@@ -80,8 +80,6 @@ namespace Stratis.Bitcoin.Features.BlockStore
             builder.AppendLine($"-prune=<amount of blocks>      Enable pruning to reduce storage requirements by enabling deleting of old blocks. Value of 0 means pruning is disabled.");
             builder.AppendLine($"-maxblkstoremem=<number>       Max memory to use before flushing blocks to disk in MB. Default is 5 MB.");
 
-
-
             NodeSettings.Default(network).Logger.LogInformation(builder.ToString());
         }
 
