@@ -11,8 +11,8 @@ using NBitcoin.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Stratis.Bitcoin.Configuration;
-using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Api;
+using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Utilities.Extensions;
 
 namespace Stratis.Bitcoin.Cli
@@ -51,7 +51,7 @@ namespace Stratis.Bitcoin.Cli
                     argList.RemoveAt(0);
                 }
 
-                string method = "";
+                string method = string.Empty;
                 if (argList.Any())
                 {
                     method = argList.First().ToUpper();
@@ -61,7 +61,7 @@ namespace Stratis.Bitcoin.Cli
                     }
                     else
                     {
-                        method = "";
+                        method = string.Empty;
                     }
                 }
 
@@ -153,6 +153,7 @@ namespace Stratis.Bitcoin.Cli
 
                             rpcUri = new Uri($"http://{rpcAddress}:{rpcPort}");
                         }
+
                         rpcSettings.RpcUser = options.GetValueOf("-rpcuser") ?? rpcSettings.RpcUser;
                         rpcSettings.RpcPassword = options.GetValueOf("-rpcpassword") ?? rpcSettings.RpcPassword;
 
@@ -274,13 +275,18 @@ namespace Stratis.Bitcoin.Cli
             {
                 if (isDebugMode)
                     stringBuilder.Append($"{ex.GetType().Name}: ");
+
                 stringBuilder.Append(ex.Message);
+
                 if (isDebugMode)
                     stringBuilder.AppendLine(ex.StackTrace);
+
                 ex = ex.InnerException;
+
                 if (ex != null)
                     stringBuilder.Append(" ---> ");
             }
+
             return stringBuilder.ToString();
         }
     }

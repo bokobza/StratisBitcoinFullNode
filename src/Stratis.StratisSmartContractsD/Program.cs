@@ -16,7 +16,7 @@ using Stratis.SmartContracts.Networks;
 
 namespace Stratis.StratisSmartContractsD
 {
-    class Program
+    public class Program
     {
         public static void Main(string[] args)
         {

@@ -1,5 +1,10 @@
 <Project>
-   <PropertyGroup>
-      <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)None.ruleset</CodeAnalysisRuleset>
-   </PropertyGroup>
+  <PropertyGroup>
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)None.ruleset</CodeAnalysisRuleset>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="..\stylecop.json" />
+  </ItemGroup>
+
 </Project>

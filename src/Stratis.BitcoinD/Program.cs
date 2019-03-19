@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Configuration;
+using Stratis.Bitcoin.Features.Api;
+using Stratis.Bitcoin.Features.Apps;
 using Stratis.Bitcoin.Features.BlockStore;
 using Stratis.Bitcoin.Features.Consensus;
 using Stratis.Bitcoin.Features.MemoryPool;
+using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.Features.Wallet;
-using Stratis.Bitcoin.Features.Api;
-using Stratis.Bitcoin.Features.Apps;
-using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Utilities;
 
@@ -18,7 +18,12 @@ namespace Stratis.BitcoinD
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
+        {
+            MainAsync(args).Wait();
+        }
+
+        public static async Task MainAsync(string[] args)
         {
             try
             {
@@ -33,7 +38,7 @@ namespace Stratis.BitcoinD
                     .AddRPC()
                     .UseWallet()
                     .UseApi()
-                    .UseApps()                    
+                    .UseApps()
                     .Build();
 
                 if (node != null)
